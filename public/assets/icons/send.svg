@@ -1,0 +1,55 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_7_45)">
+<g filter="url(#filter0_di_7_45)">
+<path d="M2.58769 25.0821C1.20933 25.6113 0.231406 26.8508 0.0362229 28.3137C-0.156948 29.7785 0.464821 31.2293 1.65806 32.0966L14.7213 41.6022L61.1185 5.09892L20.0918 45.518L37.9501 58.5127C39.085 59.3377 40.5518 59.5852 41.902 59.1768C43.2502 58.7663 44.3247 57.7421 44.8076 56.4241L63.9115 4.13508C64.1046 3.60386 63.9678 3.01026 63.5654 2.61386C63.1649 2.21745 62.5713 2.0927 62.0401 2.29593L2.58769 25.0821Z" fill="url(#paint0_linear_7_45)" fill-opacity="0.25" style="" shape-rendering="crispEdges"/>
+</g>
+<g filter="url(#filter1_di_7_45)">
+<path d="M11.6184 44.7634L11.7291 45.3691L14.2644 59.2311C14.4536 60.2614 15.1418 61.1246 16.0996 61.5411C17.0574 61.9556 18.1621 61.8671 19.0394 61.3017C22.5708 59.0239 27.1828 56.0015 27.058 55.8245L11.6184 44.7634Z" fill="url(#paint1_linear_7_45)" fill-opacity="0.25" style="" shape-rendering="crispEdges"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_di_7_45" x="-7.99854" y="-1.80026" width="79.9965" height="73.1702" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="4"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.85098 0 0 0 0 0.85098 0 0 0 0 0.85098 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_7_45"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_7_45" result="shape"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="2"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="shape" result="effect2_innerShadow_7_45"/>
+</filter>
+<filter id="filter1_di_7_45" x="3.61841" y="40.7634" width="31.4421" height="33.0357" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="4"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.85098 0 0 0 0 0.85098 0 0 0 0 0.85098 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_7_45"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_7_45" result="shape"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="4"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="shape" result="effect2_innerShadow_7_45"/>
+</filter>
+<linearGradient id="paint0_linear_7_45" x1="31.9997" y1="2.19974" x2="31.9997" y2="59.37" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" style="stop-color:white;stop-opacity:1;"/>
+<stop offset="1" stop-color="#666666" style="stop-color:#666666;stop-color:color(display-p3 0.4000 0.4000 0.4000);stop-opacity:1;"/>
+</linearGradient>
+<linearGradient id="paint1_linear_7_45" x1="19.3394" y1="44.7634" x2="19.3394" y2="61.7991" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" style="stop-color:white;stop-opacity:1;"/>
+<stop offset="1" stop-color="#666666" style="stop-color:#666666;stop-color:color(display-p3 0.4000 0.4000 0.4000);stop-opacity:1;"/>
+</linearGradient>
+<clipPath id="clip0_7_45">
+<rect width="64" height="64" fill="white" style="fill:white;fill-opacity:1;"/>
+</clipPath>
+</defs>
+</svg>
