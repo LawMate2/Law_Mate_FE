@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
-import './pages.css'
+import { useState } from "react"
+import type { FormEvent } from "react"
+import "./pages.css"
 
-type AgentAction = 'gmail' | 'drive' | 'calendar'
+type AgentAction = "gmail" | "drive" | "calendar"
 
 type AgentForm = {
   subject?: string
@@ -15,108 +15,168 @@ type AgentForm = {
 }
 
 const labelMap: Record<AgentAction, string> = {
-  gmail: 'Gmail 보내기',
-  drive: 'Google Drive로 계약서 전송',
-  calendar: 'Google Calendar에 일정 등록',
+  gmail: "Gmail"
+  ,drive: "Google Drive"
+  ,calendar: "Google Calendar"
+  ,
 }
 
 function AgentPage() {
-  const [result, setResult] = useState('')
+  const [selectedAgent, setSelectedAgent] = useState<AgentAction | null>(null)
+  const [result, setResult] = useState("")
 
-  const handleAgentSubmit = (type: AgentAction) => (event: FormEvent<HTMLFormElement>) => {
+  const handleAgentClick = (type: AgentAction) => {
+    setSelectedAgent(type)
+    setResult("")
+  }
+
+  const closePopup = () => {
+    setSelectedAgent(null)
+  }
+
+  const handleAgentSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (!selectedAgent) return
+
     const form = new FormData(event.currentTarget)
     const payload: AgentForm = Object.fromEntries(form.entries())
 
     setResult(
       JSON.stringify(
         {
-          agent: type,
+          agent: selectedAgent,
           payload,
-          status: 'MCP 서버 연동 시 실제 처리 결과가 표시됩니다.',
+          status: "MCP 서버 연동 시 실제 처리 결과가 표시됩니다.",
         },
         null,
         2,
       ),
     )
-    event.currentTarget.reset()
+    // event.currentTarget.reset() // Optional: reset form after submit
   }
 
   return (
     <div className="page">
       <section className="panel">
-        <h1>LawMate 에이전트</h1>
-        <p className="muted">
-          MCP 서버 연동을 통해 Gmail, Google Drive, Google Calendar 작업을 자동화할 수 있습니다.
+        <h1 style={{ textAlign: "center"}}>어떤 작업을 할까요?</h1>
+        <p className="muted" style={{ textAlign: "center"}}>
+          예를 들면 계약서를 첨부해서 분석해볼까요? {/*랜덤 문구로?*/}
         </p>
+        <div className="agent-button-grid">
+          <button className="agent-button" onClick={() => handleAgentClick("gmail")}>
+            <div className="icon-placeholder">
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png?20221017173631" 
+                alt="Gmail" 
+                width="48" 
+                height="38" 
+              />
+            </div>
+            <span>{labelMap.gmail}</span>
+          </button>
+          <button className="agent-button" onClick={() => handleAgentClick("drive")}>
+            <div className="icon-placeholder">
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/512px-Google_Drive_icon_%282020%29.svg.png?20221103153031" 
+                alt="Google Drive" 
+                width="48" 
+                height="48" 
+              />
+            </div>
+            <span>{labelMap.drive}</span>
+          </button>
 
-        <div className="agent-grid">
-          <article className="agent-card">
-            <h3>{labelMap.gmail}</h3>
-            <form className="form" onSubmit={handleAgentSubmit('gmail')}>
-              <label>
-                받는 사람
-                <input name="recipient" type="email" placeholder="client@example.com" required />
-              </label>
-              <label>
-                제목
-                <input name="subject" placeholder="메일 제목" required />
-              </label>
-              <label>
-                내용
-                <textarea name="body" placeholder="메일 내용을 작성하세요." rows={4} required />
-              </label>
-              <button type="submit">메일 전송</button>
-            </form>
-            <footer>OAuth 인증 후 Gmail API 호출 로직을 연결하세요.</footer>
-          </article>
-
-          <article className="agent-card">
-            <h3>{labelMap.drive}</h3>
-            <form className="form" onSubmit={handleAgentSubmit('drive')}>
-              <label>
-                파일 링크
-                <input name="fileUrl" placeholder="https://drive.google.com/…" required />
-              </label>
-              <label>
-                공유 대상
-                <input name="recipient" placeholder="lawyer@firm.com" required />
-              </label>
-              <button type="submit">계약서 공유</button>
-            </form>
-            <footer>파일 ID 파싱과 권한 설정을 MCP 서버에서 처리하면 됩니다.</footer>
-          </article>
-
-          <article className="agent-card">
-            <h3>{labelMap.calendar}</h3>
-            <form className="form" onSubmit={handleAgentSubmit('calendar')}>
-              <label>
-                일정 제목
-                <input name="eventTitle" placeholder="계약서 서명" required />
-              </label>
-              <label>
-                일정 날짜
-                <input name="eventDate" type="datetime-local" required />
-              </label>
-              <label>
-                설명
-                <textarea name="eventDescription" placeholder="중요 참고 사항을 남겨주세요." rows={3} />
-              </label>
-              <button type="submit">일정 등록</button>
-            </form>
-            <footer>캘린더 ID와 타임존 처리를 MCP 서버와 연결해 주세요.</footer>
-          </article>
+          <button className="agent-button" onClick={() => handleAgentClick("calendar")}>
+            <div className="icon-placeholder">
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/512px-Google_Calendar_icon_%282020%29.svg.png?20221017173603" 
+                alt="Google Calendar" 
+                width="48" 
+                height="48" 
+              />
+            </div>
+            <span>{labelMap.calendar}</span>
+          </button>
         </div>
       </section>
 
-      <section className="panel">
-        <h2>최근 실행 결과</h2>
-        {result ? (
-          <pre>{result}</pre>
-        ) : (
-          <p className="muted">폼을 제출하면 요청 정보와 상태가 표시됩니다.</p>
-        )}
-      </section>
+      {selectedAgent && (
+        <div className="modal-overlay" onClick={closePopup}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <header className="modal-header">
+              <h3>{labelMap[selectedAgent]}</h3>
+              <button className="close-button" onClick={closePopup}>&times;</button>
+            </header>
+            
+            {selectedAgent === "gmail" && (
+              <form className="form" onSubmit={handleAgentSubmit}>
+                <label>
+                  받는 사람
+                  <input name="recipient" type="email" placeholder="client@example.com" required />
+                </label>
+                <label>
+                  제목
+                  <input name="subject" placeholder="메일 제목" required />
+                </label>
+                <label>
+                  내용
+                  <textarea name="body" placeholder="메일 내용을 작성하세요." rows={4} required />
+                </label>
+                <button type="submit">메일 전송</button>
+                <footer className="muted" style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
+                  OAuth 인증 후 Gmail API 호출 로직을 연결하세요.
+                </footer>
+              </form>
+            )}
+
+            {selectedAgent === "drive" && (
+              <form className="form" onSubmit={handleAgentSubmit}>
+                <label>
+                  파일 링크
+                  <input name="fileUrl" placeholder="https://drive.google.com/…" required />
+                </label>
+                <label>
+                  공유 대상
+                  <input name="recipient" placeholder="lawyer@firm.com" required />
+                </label>
+                <button type="submit">계약서 공유</button>
+                <footer className="muted" style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
+                  파일 ID 파싱과 권한 설정을 MCP 서버에서 처리하면 됩니다.
+                </footer>
+              </form>
+            )}
+
+            {selectedAgent === "calendar" && (
+              <form className="form" onSubmit={handleAgentSubmit}>
+                <label>
+                  일정 제목
+                  <input name="eventTitle" placeholder="계약서 서명" required />
+                </label>
+                <label>
+                  일정 날짜
+                  <input name="eventDate" type="datetime-local" required />
+                </label>
+                <label>
+                  설명
+                  <textarea name="eventDescription" placeholder="중요 참고 사항을 남겨주세요." rows={3} />
+                </label>
+                <button type="submit">일정 등록</button>
+                <footer className="muted" style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
+                  캘린더 ID와 타임존 처리를 MCP 서버와 연결해 주세요.
+                </footer>
+              </form>
+            )}
+
+            {result && (
+              <div className="feedback">
+                <pre style={{ margin: 0, background: "transparent", padding: 0, color: "inherit" }}>
+                  {result}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
