@@ -1,6 +1,7 @@
-import { useState } from "react"
-import type { FormEvent } from "react"
+import { useState, useRef } from "react"
+import type { FormEvent, ChangeEvent, DragEvent } from "react"
 import "./pages.css"
+import contractIcon from "../assets/contract.png"
 
 type AgentAction = "gmail" | "drive" | "calendar"
 
@@ -15,15 +16,71 @@ type AgentForm = {
 }
 
 const labelMap: Record<AgentAction, string> = {
-  gmail: "Gmail"
-  ,drive: "Google Drive"
-  ,calendar: "Google Calendar"
+  gmail: "Gmail에서 가져오기"
+  ,drive: "Google Drive에서 가져오기"
+  ,calendar: "Google Calendar에서 가져오기"
   ,
 }
 
 function AgentPage() {
   const [selectedAgent, setSelectedAgent] = useState<AgentAction | null>(null)
   const [result, setResult] = useState("")
+  const [isDragging, setIsDragging] = useState(false)
+  const file_input = useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setResult(
+        JSON.stringify(
+          {
+            agent: "upload",
+            payload: {
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+            },
+            status: "파일 다이얼로그로 선택됨",
+          },
+          null,
+          2,
+        ),
+      )
+    }
+  }
+
+  const handleDragOver = (e: DragEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: DragEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: DragEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0]
+      setResult(
+        JSON.stringify(
+          {
+            agent: "upload",
+            payload: {
+              fileName: file.name,
+              fileSize: file.size,
+              fileType: file.type,
+            },
+            status: "파일 드래그됨",
+          },
+          null,
+          2,
+        ),
+      )
+    }
+  }
 
   const handleAgentClick = (type: AgentAction) => {
     setSelectedAgent(type)
@@ -52,7 +109,6 @@ function AgentPage() {
         2,
       ),
     )
-    // event.currentTarget.reset() // Optional: reset form after submit
   }
 
   return (
@@ -63,6 +119,25 @@ function AgentPage() {
           예를 들면 계약서를 첨부해서 분석해볼까요? {/*랜덤 문구로?*/}
         </p>
         <div className="agent-button-grid">
+          <button
+            className={`agent-button ${isDragging ? "dragging" : ""}`}
+            onClick={() => file_input.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input
+              type="file"
+              ref={file_input}
+              style={{ display: "none" }}
+              onChange={handleFileSelect}
+            />
+            <div className="icon-placeholder">
+              <img src={contractIcon} alt="계약서 업로드" width="48" height="48" />
+            </div>
+            <span>{isDragging ? "여기에 드래그해보세요!" : "계약서 파일 업로드"}</span> {/*==true 없어도 됨*/}
+          </button>
+
           <button className="agent-button" onClick={() => handleAgentClick("gmail")}>
             <div className="icon-placeholder">
               <img 

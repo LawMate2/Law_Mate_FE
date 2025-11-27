@@ -79,7 +79,8 @@ nav a:active {
   border-color: #000000;
 }
 
-nav a.active {
+/* 점하고 콜론 주의! */
+nav a.active {  
   background: #1d4ed8;
   color: #fff;
   border-color: #1d4ed8;

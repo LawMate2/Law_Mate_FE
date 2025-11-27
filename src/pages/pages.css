@@ -188,7 +188,15 @@
   border-color: #1d4ed8;
   background: #eff6ff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.ㄴ1);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.1);
+}
+
+.agent-button.dragging {
+  border-color: #1d4ed8;
+  background: #dbeafe;
+  border-style: dashed;
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.15);
 }
 
 .agent-button:active {
