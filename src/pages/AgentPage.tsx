@@ -22,7 +22,11 @@ const labelMap: Record<AgentAction, string> = {
   ,
 }
 
-function AgentPage() {
+type AgentPageProps = {
+  embedded?: boolean
+}
+
+function AgentPage({ embedded }: AgentPageProps) {
   const [selectedAgent, setSelectedAgent] = useState<AgentAction | null>(null)
   const [result, setResult] = useState("")
   const [isDragging, setIsDragging] = useState(false)
@@ -34,17 +38,21 @@ function AgentPage() {
       setResult(
         JSON.stringify(
           {
-            agent: "upload",
-            payload: {
-              fileName: file.name,
-              fileSize: file.size,
-              fileType: file.type,
-            },
-            status: "파일 다이얼로그로 선택됨",
-          },
-          null,
-          2,
-        ),
+            agent: "upload"
+            ,payload: {
+              fileName: file.name
+              ,fileSize: file.size
+              ,fileType: file.type
+              ,
+          }
+            ,status: "파일 다이얼로그로 선택됨"
+            ,
+          }
+          ,null
+          ,2
+          ,
+        )
+        ,
       )
     }
   }
@@ -67,17 +75,21 @@ function AgentPage() {
       setResult(
         JSON.stringify(
           {
-            agent: "upload",
-            payload: {
-              fileName: file.name,
-              fileSize: file.size,
-              fileType: file.type,
-            },
-            status: "파일 드래그됨",
-          },
-          null,
-          2,
-        ),
+            agent: "upload"
+            ,payload: {
+              fileName: file.name
+              ,fileSize: file.size
+              ,fileType: file.type
+              ,
+            }
+            ,status: "파일 드래그됨"
+            ,
+          }
+          ,null
+          ,2
+          ,
+        )
+        ,
       )
     }
   }
@@ -101,19 +113,22 @@ function AgentPage() {
     setResult(
       JSON.stringify(
         {
-          agent: selectedAgent,
-          payload,
-          status: "MCP 서버 연동 시 실제 처리 결과가 표시됩니다.",
-        },
-        null,
-        2,
-      ),
+          agent: selectedAgent
+          ,payload
+          ,status: "MCP 서버 연동 시 실제 처리 결과가 표시됩니다."
+          ,
+        }
+        ,null
+        ,2
+        ,
+      )
+      ,
     )
   }
 
   return (
-    <div className="page">
-      <section className="panel">
+    <div className={embedded ? "" : "page"}>
+      <section className={embedded ? "" : "panel"}>
         <h1 style={{ textAlign: "center"}}>어떤 작업을 할까요?</h1>
         <p className="muted" style={{ textAlign: "center"}}>
           예를 들면 계약서를 첨부해서 분석해볼까요? {/*랜덤 문구로?*/}

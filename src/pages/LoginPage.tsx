@@ -17,7 +17,7 @@ function LoginPage() {
     <div className="page login-page">
       <section className="panel">
         <h1>LawMate 로그인</h1>
-        <p className="muted">발급 받은 계정으로 로그인하세요.</p>
+        <p className="muted">LawMate 법률 상담의 모든 기능을 누리세요!</p>
         <form className="form" onSubmit={handleSubmit}>
           <label>
             이메일
@@ -44,8 +44,8 @@ function LoginPage() {
         {message && <p className="feedback">{message}</p>}
       </section>
       <section className="panel login-info">
-        <h2>LawMate Assistant</h2>
-        <p>로그인 후 챗봇과 에이전트 기능을 사용해 Gmail, Drive, Calendar를 한 곳에서 제어할 수 있습니다.</p>
+        <h2>랜딩페이지가 들어갈자리입니다</h2>
+        <p>랜딩 페이지 예시</p>
       </section>
     </div>
   )
