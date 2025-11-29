@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import './pages.css'
+import '../styles/common.css'
+import '../styles/AgentPage.css'
 
 type AgentAction = 'gmail' | 'drive' | 'calendar'
 

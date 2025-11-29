@@ -69,6 +69,23 @@ nav a.active {
   color: #fff;
 }
 
+nav .logout-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  color: #475569;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+nav .logout-btn:hover {
+  background: #fee;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
 .app-main {
   flex: 1;
   padding: 2rem;

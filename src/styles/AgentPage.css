@@ -1,0 +1,36 @@
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.agent-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agent-card h3 {
+  margin: 0;
+}
+
+.agent-card footer {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.agent-card button {
+  width: 100%;
+}
+
+pre {
+  background: #0f172a;
+  color: #f1f5f9;
+  border-radius: 16px;
+  padding: 1.5rem;
+  overflow-x: auto;
+}

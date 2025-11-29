@@ -1,46 +1,127 @@
-import './pages.css'
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+import '../styles/common.css'
+import '../styles/LoginPage.css'
+import { useEffect, useState } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { api } from '../services'
+import { useAuth } from '../contexts/AuthContext'
 
 function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const { login, isAuthenticated } = useAuth()
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault()
-    // TODO: Replace with actual login request.
-    setMessage(`로그인 시도: ${email}`)
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/chatbot')
+    }
+  }, [isAuthenticated, navigate])
+
+  useEffect(() => {
+    const code = searchParams.get('code')
+    const errorParam = searchParams.get('error')
+
+    if (!code && !errorParam) {
+      return
+    }
+
+    const cleanedParams = new URLSearchParams(searchParams)
+    cleanedParams.delete('code')
+    cleanedParams.delete('error')
+    setSearchParams(cleanedParams, { replace: true })
+
+    if (errorParam) {
+      const readableError = decodeURIComponent(errorParam)
+      setMessage(`Google 로그인 실패: ${readableError}`)
+      return
+    }
+
+    if (!code) {
+      return
+    }
+
+    const finishGoogleLogin = async () => {
+      setIsLoading(true)
+      setMessage('Google 계정 정보를 확인 중입니다...')
+      try {
+        const response = await api.exchangeGoogleCode(code)
+        if (response.token) {
+          localStorage.setItem('accessToken', response.token)
+          login(response.token)
+          setMessage(response.message ?? '로그인 완료! 곧 이동합니다.')
+          setTimeout(() => {
+            navigate('/chatbot')
+          }, 1000)
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Google 인증을 완료하는 중 문제가 발생했습니다.'
+        setMessage(errorMessage)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void finishGoogleLogin()
+  }, [searchParams, setSearchParams, login, navigate])
+
+  const handleGoogleLogin = async () => {
+    if (isLoading) {
+      return
+    }
+
+    setIsLoading(true)
+    setMessage('Google 로그인 페이지로 이동 중입니다...')
+    try {
+      const { authorizationUrl } = await api.getGoogleAuthUrl()
+      window.location.href = authorizationUrl
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Google 로그인 진입에 실패했습니다.'
+      setMessage(errorMessage)
+      setIsLoading(false)
+    }
   }
 
   return (
     <div className="page login-page">
       <section className="panel">
         <h1>LawMate 로그인</h1>
-        <p className="muted">발급 받은 계정으로 로그인하세요.</p>
-        <form className="form" onSubmit={handleSubmit}>
-          <label>
-            이메일
-            <input
-              type="email"
-              placeholder="lawyer@lawmate.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            비밀번호
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
-          <button type="submit">로그인</button>
-        </form>
+        <p className="muted">Google 계정으로 OAuth 인증을 진행하세요.</p>
+        <div className="auth-actions">
+          <button
+            type="button"
+            className="google-login-button"
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+          >
+            <svg viewBox="0 0 533.5 544.3" aria-hidden="true" focusable="false">
+              <path
+                fill="#4285f4"
+                d="M533.5 278.4c0-17.4-1.6-34-4.7-50.2H272v95.6h146.9c-6.4 34.5-25.7 63.7-54.8 83.2v68h88.4c51.8-47.7 80-118 80-196.6z"
+              />
+              <path
+                fill="#34a853"
+                d="M272 544.3c73.9 0 135.9-24.5 181.2-66.4l-88.4-68c-24.5 16.4-55.9 26-92.8 26-71.4 0-132-48.2-153.7-113.1H27.1v71.2c45 89.2 137.5 150.3 244.9 150.3z"
+              />
+              <path
+                fill="#fbbc04"
+                d="M118.3 322.8c-10.7-31.9-10.7-66.2 0-98.1v-71.2H27.1c-45.6 90.8-45.6 198.8 0 289.6z"
+              />
+              <path
+                fill="#ea4335"
+                d="M272 107.7c39.7-.6 78 14.3 106.7 41.7l79.5-79.5C407.8 24.5 345.8 0 272 0 164.6 0 72.1 61.1 27.1 150.3l91.2 71.2c21.7-64.9 82.3-113.8 153.7-113.8z"
+              />
+            </svg>
+            Google 계정으로 로그인
+          </button>
+          <p className="muted fine-print">
+            LawMate는 Google OAuth2를 통해 접근 권한만 요청하며 비밀번호를 저장하지 않습니다.
+          </p>
+        </div>
         {message && <p className="feedback">{message}</p>}
       </section>
       <section className="panel login-info">
