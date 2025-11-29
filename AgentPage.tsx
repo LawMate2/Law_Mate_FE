@@ -34,17 +34,21 @@ function AgentPage() {
       setResult(
         JSON.stringify(
           {
-            agent: "upload",
-            payload: {
-              fileName: file.name,
-              fileSize: file.size,
-              fileType: file.type,
-            },
-            status: "파일 다이얼로그로 선택됨",
-          },
-          null,
-          2,
-        ),
+            agent: "upload"
+            ,payload: {
+              fileName: file.name
+              ,fileSize: file.size
+              ,fileType: file.type
+              ,
+          }
+            ,status: "파일 다이얼로그로 선택됨"
+            ,
+          }
+          ,null
+          ,2
+          ,
+        )
+        ,
       )
     }
   }
@@ -67,17 +71,21 @@ function AgentPage() {
       setResult(
         JSON.stringify(
           {
-            agent: "upload",
-            payload: {
-              fileName: file.name,
-              fileSize: file.size,
-              fileType: file.type,
-            },
-            status: "파일 드래그됨",
-          },
-          null,
-          2,
-        ),
+            agent: "upload"
+            ,payload: {
+              fileName: file.name
+              ,fileSize: file.size
+              ,fileType: file.type
+              ,
+            }
+            ,status: "파일 드래그됨"
+            ,
+          }
+          ,null
+          ,2
+          ,
+        )
+        ,
       )
     }
   }
@@ -101,13 +109,16 @@ function AgentPage() {
     setResult(
       JSON.stringify(
         {
-          agent: selectedAgent,
-          payload,
-          status: "MCP 서버 연동 시 실제 처리 결과가 표시됩니다.",
-        },
-        null,
-        2,
-      ),
+          agent: selectedAgent
+          ,payload
+          ,status: "MCP 서버 연동 시 실제 처리 결과가 표시됩니다."
+          ,
+        }
+        ,null
+        ,2
+        ,
+      )
+      ,
     )
   }
 
