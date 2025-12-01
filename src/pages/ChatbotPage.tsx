@@ -1,74 +1,201 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
 import AgentPage from "./AgentPage"
+import { useAuth } from '../contexts/AuthContext'
 import './pages.css'
+
+const API_BASE_URL = import.meta.env.VITE_BASE_API_URL || 'http://localhost:8000'
 
 type Chat = {
   id: string
   title: string
   messages: Message[]
+  created_at?: string
+  updated_at?: string
 }
 
 type Message = {
   id: string
   role: 'user' | 'assistant'
   content: string
+  created_at?: string
 }
 
-const chat_history: Chat[] = [
-  {
-    id: '1',
-    title: '상담 - 계약서 검토',
-    messages: [
-      { id: '1', role: 'user', content: '계약서에서 갑의 책임 조항 정리해줘' },
-      {
-        id: '2',
-        role: 'assistant',
-        content: '3.1, 3.2 조항에서 갑의 의무가 명시되어 있고 전자서명 절차를 먼저 검증해야 합니다.',
-      },
-    ],
-  },
-  {
-    id: '2',
-    title: '고객 메일 초안',
-    messages: [
-      { id: '3', role: 'user', content: '고객에게 보낼 요약 메일 써줘' },
-      {
-        id: '4',
-        role: 'assistant',
-        content: '안녕하세요. 요청하신 사건은 이번 주 내로 초안 검토 예정입니다. 필요한 자료를 공유해 주세요.',
-      },
-    ],
-  },
-]
+type UserChatHistory = {
+  chats: Chat[]
+  total: number
+}
+
+type StoredChats = {
+  chats: Chat[]
+}
+
+const createEmptyChat = (title = '새로운 대화'): Chat => ({
+  id: crypto.randomUUID(),
+  title,
+  messages: [],
+  created_at: new Date().toISOString(),
+})
+
+const getStorageKey = (userId?: string) =>
+  userId ? `lawmate_chats_${userId}` : ''
+
+const buildWsUrl = () => {
+  try {
+    const url = new URL(API_BASE_URL)
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+    url.pathname = url.pathname.replace(/\/$/, '') + '/chat/ws'
+    return url.toString()
+  } catch {
+    return API_BASE_URL.replace(/^http/i, 'ws') + '/chat/ws'
+  }
+}
+
+const formatTime = (isoTime?: string) => {
+  if (!isoTime) return ''
+  const date = new Date(isoTime)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+}
 
 function ChatbotPage() {
-  const [chats, setChats] = useState<Chat[]>(chat_history)
-  const [chatID, setChatID] = useState(chats[0]?.id ?? '')
+  const { user } = useAuth()
+  const [chats, setChats] = useState<Chat[]>([])
+  const [chatID, setChatID] = useState('')
   const [input, setInput] = useState('')
   const [showAgentPopup, setShowAgentPopup] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true)
+
+  // Load cached chats from localStorage for quick restore on refresh/navigation
+  useEffect(() => {
+    if (!user?.id) return
+    const key = getStorageKey(user.id)
+    const raw = localStorage.getItem(key)
+    if (!raw) return
+    try {
+      const parsed = JSON.parse(raw) as StoredChats | Chat[]
+      const savedChats = Array.isArray(parsed) ? parsed : parsed.chats
+      if (savedChats?.length) {
+        setChats(savedChats)
+        setChatID(savedChats[0].id)
+        setIsLoadingHistory(false)
+      }
+    } catch (error) {
+      console.error('로컬 채팅 복원 실패:', error)
+    }
+  }, [user?.id])
+
+  // Fetch chat history on component mount
+  useEffect(() => {
+    const fetchChatHistory = async () => {
+      if (!user?.id) {
+        setIsLoadingHistory(false)
+        return
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/chat/history/user/${user.id}?skip=0&limit=100`,
+          {
+            method: 'GET',
+            headers: {
+              'accept': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            },
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} 오류`)
+        }
+
+        const data: UserChatHistory = await response.json()
+
+        if (data.chats && data.chats.length > 0) {
+          setChats(data.chats)
+          setChatID(data.chats[0].id)
+        }
+      } catch (error) {
+        console.error('채팅 히스토리 로드 실패:', error)
+        // 실패 시 빈 상태로 유지 (새 대화 시작 가능)
+      } finally {
+        setIsLoadingHistory(false)
+      }
+    }
+
+    fetchChatHistory()
+  }, [user?.id])
+
+  // Ensure at least one chat exists for immediate use
+  useEffect(() => {
+    if (!user?.id || isLoadingHistory) return
+    if (!chats.length) {
+      const freshChat = createEmptyChat()
+      setChats([freshChat])
+      setChatID(freshChat.id)
+      return
+    }
+    if (!chatID) {
+      setChatID(chats[0].id)
+    }
+  }, [chatID, chats, isLoadingHistory, user?.id])
+
+  // Persist chats locally so refresh/navigation keeps history
+  useEffect(() => {
+    if (!user?.id) return
+    const key = getStorageKey(user.id)
+    localStorage.setItem(key, JSON.stringify({ chats }))
+  }, [chats, user?.id])
 
   const active_chat = useMemo(
     () => chats.find((chat) => chat.id === chatID) ?? chats[0],
     [chats, chatID],
   )
 
+  const userName = user?.name || '사용자'
+
+  const handleDeleteChat = (chatId: string) => {
+    setChats((prev) => {
+      const filtered = prev.filter((chat) => chat.id !== chatId)
+      if (filtered.length === 0) {
+        const fresh = createEmptyChat()
+        setChatID(fresh.id)
+        return [fresh]
+      }
+      if (chatId === chatID) {
+        setChatID(filtered[0].id)
+      }
+      return filtered
+    })
+  }
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!input.trim() || !active_chat || isLoading) return
+    if (!input.trim() || !active_chat || isLoading || !user?.id) return
     const new_message: Message = {
       id: crypto.randomUUID()
       ,role: "user"
       ,content: input.trim()
+      ,created_at: new Date().toISOString()
       ,
     }
+    const pendingAssistantId = crypto.randomUUID()
     setChats((prev) =>
       prev.map((chat) =>
         chat.id === active_chat.id
           ?{
               ...chat
-              ,messages: [...chat.messages, new_message]
+              ,messages: [
+                ...chat.messages,
+                new_message,
+                {
+                  id: pendingAssistantId,
+                  role: "assistant",
+                  content: "",
+                  created_at: new Date().toISOString(),
+                },
+              ]
               ,
             }
           :chat
@@ -78,69 +205,133 @@ function ChatbotPage() {
     )
     setInput('')
     setIsLoading(true)
-    try {
-      const response = await fetch("http://localhost:8000/chat/"
-        , {
-        method: "POST"
-        ,headers: {
-          "accept": "application/json"
-          ,"Content-Type": "application/json"
-        }
-        ,body: JSON.stringify({
-          message: new_message.content
-          ,session_id: active_chat.id
-          ,conversation_history: //[]
-            active_chat.messages
-          ,
-        })
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} 오류`);
-      }
-      const result = await response.json();
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === active_chat.id
-            ? {
-                ...chat
-                ,messages: [
-                  ...chat.messages
-                  ,
-                  {
-                    id: crypto.randomUUID()
-                    ,role: "assistant"
-                    ,content: result.response || "지금은 답변할 수 없어요. 나중에 다시 시도해주세요.",
-                  },
-                ],
-              }
-            :chat
-            ,
-        ),
+    const ws = new WebSocket(buildWsUrl())
+    const history = [...active_chat.messages, new_message].map(({ role, content }) => ({
+      role,
+      content,
+    }))
+    let buffered = ''
+
+    ws.onopen = () => {
+      ws.send(
+        JSON.stringify({
+          message: new_message.content,
+          session_id: active_chat.id,
+          conversation_history: history,
+        }),
       )
-    } catch (error) {
-      console.error(`리퀘실패: ${error}`);  //HACK
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === active_chat.id
-            ? {
-                ...chat
-                ,messages: [
-                  ...chat.messages
-                  ,{
-                    id: crypto.randomUUID()
-                    ,role: "assistant"
-                    ,content: "오류가 발생했습니다. 잠시 후에 다시 시도해주세요."
-                    ,
-                  },
-                ],
-              }
-            : chat
-            ,
-        ),
-      )
-    } finally {
-      setIsLoading(false)
     }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data as string)
+        if (data.event === 'token') {
+          buffered += data.token ?? ''
+          setChats((prev) =>
+            prev.map((chat) =>
+              chat.id === active_chat.id
+                ? {
+                    ...chat,
+                    messages: chat.messages.map((msg) =>
+                      msg.id === pendingAssistantId ? { ...msg, content: buffered } : msg,
+                    ),
+                  }
+                : chat,
+            ),
+          )
+        } else if (data.event === 'done') {
+          const sessionFromServer = data.session_id as string | undefined
+          const finalResponse =
+            data.response || buffered || '지금은 답변할 수 없어요. 나중에 다시 시도해주세요.'
+          setChats((prev) =>
+            prev.map((chat) => {
+              if (chat.id !== active_chat.id) return chat
+              const updatedMessages = chat.messages.map((msg) =>
+                msg.id === pendingAssistantId ? { ...msg, content: finalResponse } : msg,
+              )
+              return {
+                ...chat,
+                id: sessionFromServer || chat.id,
+                messages: updatedMessages,
+              }
+            }),
+          )
+          if (sessionFromServer && sessionFromServer !== active_chat.id) {
+            setChatID(sessionFromServer)
+          }
+          setIsLoading(false)
+          ws.close()
+        } else if (data.event === 'error') {
+          throw new Error(data.detail || '스트리밍 중 오류가 발생했습니다.')
+        }
+      } catch (error) {
+        console.error('스트리밍 처리 실패:', error)
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat.id === active_chat.id
+              ? {
+                  ...chat,
+                  messages: chat.messages.map((msg) =>
+                    msg.id === pendingAssistantId
+                      ? {
+                          ...msg,
+                          content: '오류가 발생했습니다. 잠시 후에 다시 시도해주세요.',
+                        }
+                      : msg,
+                  ),
+                }
+              : chat,
+          ),
+        )
+        setIsLoading(false)
+        ws.close()
+      }
+    }
+
+    ws.onerror = (event) => {
+      console.error('웹소켓 오류:', event)
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === active_chat.id
+            ? {
+                ...chat,
+                messages: chat.messages.map((msg) =>
+                  msg.id === pendingAssistantId
+                    ? {
+                        ...msg,
+                        content: '연결 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+                      }
+                    : msg,
+                ),
+              }
+            : chat,
+        ),
+      )
+      setIsLoading(false)
+      ws.close()
+    }
+
+    ws.onclose = (event) => {
+      if (!event.wasClean && isLoading) {
+        setIsLoading(false)
+      }
+    }
+  }
+
+  // Show loading indicator while fetching chat history
+  if (isLoadingHistory) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 'calc(100vh - 4rem)',
+        fontSize: '1.2rem',
+        color: '#475569'
+      }}>
+        <div>채팅 히스토리 불러오는 중...</div>
+      </div>
+    )
   }
 
   return (
@@ -150,12 +341,9 @@ function ChatbotPage() {
           <h2>대화 기록</h2>  {/*TODO: 대화 기록 삭제 기능*/}
           <button
             onClick={() => {
-              const id = crypto.randomUUID()
-              setChats((prev) => [
-                {id, title: '새로운 대화', messages: [] },
-                ...prev,
-              ])
-              setChatID(id)
+              const chat = createEmptyChat()
+              setChats((prev) => [chat, ...prev])
+              setChatID(chat.id)
             }}
           >
             새 대화
@@ -168,8 +356,20 @@ function ChatbotPage() {
               className={chat.id === active_chat?.id ? 'active' : ''}
               onClick={() => setChatID(chat.id)}
             >
-              {chat.title}
-              <small className="muted block">{chat.messages.at(-1)?.content}</small>
+              <div className="chat-list-text">
+                <span>{chat.title}</span>
+                <small className="muted block">{chat.messages.at(-1)?.content}</small>
+              </div>
+              <button
+                className="chat-delete"
+                aria-label="대화 삭제"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  handleDeleteChat(chat.id)
+                }}
+              >
+                삭제
+              </button>
             </li>
           ))}
         </ul>
@@ -184,19 +384,31 @@ function ChatbotPage() {
             <>
               {active_chat.messages.map((message) => (
                 <article key={message.id} className={`message ${message.role}`}>
-                  <strong>{message.role === 'user' ? '사용자' : 'LawMate'}</strong>
-                  <span>{message.content}</span>
+                  <div className="message-card">
+                    <div className="message-meta">
+                      <strong>{message.role === 'user' ? userName : 'LawMate'}</strong>
+                      <time className="message-time">
+                        {formatTime(message.created_at) || '방금'}
+                      </time>
+                    </div>
+                    <p>{message.content}</p>
+                  </div>
                 </article>
               ))}
               {isLoading && (
                 <article className="message assistant">
-                  <strong>LawMate</strong>
-                  <div className="loading-dots">
-                    <span>답변을 생성하고 있습니다</span>
-                    <div className="dots">
-                      <span>.</span>
-                      <span>.</span>
-                      <span>.</span>
+                  <div className="message-card">
+                    <div className="message-meta">
+                      <strong>LawMate</strong>
+                      <time className="message-time">방금</time>
+                    </div>
+                    <div className="loading-dots">
+                      <span>답변을 생성하고 있습니다</span>
+                      <div className="dots">
+                        <span>.</span>
+                        <span>.</span>
+                        <span>.</span>
+                      </div>
                     </div>
                   </div>
                 </article>
@@ -253,26 +465,20 @@ function ChatbotPage() {
               embedded={true}
               onUploadSuccess={(result, isImage) => {
                 setShowAgentPopup(false)
-                setChats((prev) =>
-                  prev.map((chat) =>
-                    chat.id === active_chat.id
-                      ? {
-                          ...chat
-                          ,messages: [
-                            ...chat.messages,
-                            {
-                              id: crypto.randomUUID()
-                              ,role: "assistant"
-                              ,content: isImage 
-                                ? `보내주신 이미지에 적혀 있는 내용이에요.\n\n${result.text}\n\n이걸로 어떤 대화를 나눠볼까요?` 
-                                : "보내주신 자료를 잘 받았어요! 이걸로 어떤 대화를 나눠볼까요?"
-                            },
-                          ],
-                        }
-                      :chat
-                      ,
-                  ),
-                )
+                const initialMessage = {
+                  id: crypto.randomUUID(),
+                  role: "assistant" as const,
+                  content: isImage
+                    ? `계약서 이미지를 받아서 OCR을 진행했어요.\n\n${result.text || '텍스트를 추출하지 못했습니다.'}\n\n추가 질문이 있으면 말씀해주세요.`
+                    : "계약서를 새 대화로 준비했어요. 궁금한 점을 알려주세요!",
+                  created_at: new Date().toISOString(),
+                }
+                const newChat = {
+                  ...createEmptyChat("계약서 분석"),
+                  messages: [initialMessage],
+                }
+                setChats((prev) => [newChat, ...prev])
+                setChatID(newChat.id)
               }}
             />
           </div>

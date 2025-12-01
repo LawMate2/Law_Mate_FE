@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { authApi } from '../services/auth'
-import type { User, DevLoginRequest, DevSignupRequest, GoogleLoginRequest } from '@/types'
+import type { User, DevLoginRequest, DevSignupRequest, GoogleLoginRequest } from '../types/auth'
 
 interface AuthContextType {
   isAuthenticated: boolean

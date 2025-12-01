@@ -175,10 +175,33 @@ function LoginPage() {
         {message && <p className="feedback">{message}</p>}
       </section>
       <section className="panel login-info">
-        <h2>쉽고 빠르고 편리한 법률 상담 서비스</h2>
-        <p>단 몇 초면 빠른 AI 상담이 가능합니다.</p>
+        <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700' }}>
+          당신의 스마트한 법률 파트너
+        </h2>
+        <ul style={{
+          listStyle: 'none',
+          padding: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.2rem',
+          fontSize: '1.05rem',
+          lineHeight: '1.6'
+        }}>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>✅</span>
+            <span>AI 기반 법률 상담으로 궁금증을 즉시 해결</span>
+          </li>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>✅</span>
+            <span>계약서 PDF를 업로드하면 자동으로 리스크 분석</span>
+          </li>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>✅</span>
+            <span>구글 캘린더, 드라이브, Gmail 연동으로 법률 일정과 문서를 한 곳에서 관리</span>
+          </li>
+        </ul>
       </section>
-    </div>  //TODO: 자동으로 넘어가ㅡㄴ 슬라이드쇼로 변경 (예: 왜 LawMate인가요?)
+    </div>
   )
 }
 
