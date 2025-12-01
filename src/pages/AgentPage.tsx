@@ -15,38 +15,63 @@ type AgentForm = {
   eventDescription?: string
 }
 
-const labelMap: Record<AgentAction, string> = {
-  gmail: "Gmail에서 가져오기"
-  ,drive: "Google Drive에서 가져오기"
-  ,calendar: "Google Calendar에서 가져오기"
+const label_map: Record<AgentAction, string> = {
+  gmail: "Gmail"
+  ,drive: "Google Drive"
+  ,calendar: "Google Calendar"
   ,
 }
 
-function AgentPage() {
-  const [selectedAgent, setSelectedAgent] = useState<AgentAction | null>(null)
+type AgentPageProps = {
+  embedded?: boolean
+  onUploadSuccess?: (result: any) => void
+}
+
+function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
+  const [selected_agent, setSelectedAgent] = useState<AgentAction | null>(null)
   const [result, setResult] = useState("")
-  const [isDragging, setIsDragging] = useState(false)
+  const [is_dragging, setIsDragging] = useState(false)
+  const [is_uploading, setIsUploading] = useState(false)
   const file_input = useRef<HTMLInputElement>(null)
 
-  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setResult(
-        JSON.stringify(
-          {
-            agent: "upload",
-            payload: {
-              fileName: file.name,
-              fileSize: file.size,
-              fileType: file.type,
-            },
-            status: "파일 다이얼로그로 선택됨",
-          },
-          null,
-          2,
-        ),
-      )
+  const uploadFile = async (file: File) => {
+    const isImage = file.type.startsWith('image/')
+    const url = isImage 
+      ? "http://localhost:8000/ocr/extract" 
+      : "http://localhost:8000/documents/upload"  //AI: Sonnet 4.5 - URL도 분기 가능
+    
+    setIsUploading(true)
+    setResult(isImage ? "OCR 분석 중..." : "문서 업로드 중...")
+    
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+        },
+        body: formData
+      })
+
+      if (!response.ok) throw new Error(`HTTP ${response.status} 오류`)
+
+      const result = await response.json()
+      setResult(JSON.stringify(result, null, 2))
+      if (onUploadSuccess) {
+        onUploadSuccess(result)
+      }
+    } catch (error) {
+      console.error(`업로드 실패: ${error}`)
+      setResult(`업로드 실패: ${error}`)
+    } finally {
+      setIsUploading(false)
     }
+  }
+
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0])uploadFile(e.target.files[0])
   }
 
   const handleDragOver = (e: DragEvent<HTMLButtonElement>) => {
@@ -62,24 +87,7 @@ function AgentPage() {
   const handleDrop = (e: DragEvent<HTMLButtonElement>) => {
     e.preventDefault()
     setIsDragging(false)
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0]
-      setResult(
-        JSON.stringify(
-          {
-            agent: "upload",
-            payload: {
-              fileName: file.name,
-              fileSize: file.size,
-              fileType: file.type,
-            },
-            status: "파일 드래그됨",
-          },
-          null,
-          2,
-        ),
-      )
-    }
+    if (e.dataTransfer.files && e.dataTransfer.files[0])uploadFile(e.dataTransfer.files[0])
   }
 
   const handleAgentClick = (type: AgentAction) => {
@@ -93,7 +101,7 @@ function AgentPage() {
 
   const handleAgentSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!selectedAgent) return
+    if (!selected_agent) return
 
     const form = new FormData(event.currentTarget)
     const payload: AgentForm = Object.fromEntries(form.entries())
@@ -101,89 +109,98 @@ function AgentPage() {
     setResult(
       JSON.stringify(
         {
-          agent: selectedAgent,
-          payload,
-          status: "MCP 서버 연동 시 실제 처리 결과가 표시됩니다.",
-        },
-        null,
-        2,
-      ),
+          agent: selected_agent
+          ,payload
+          ,status: "MCP 서버 연동 시 실제 처리 결과가 표시됩니다."
+          ,
+        }
+        ,null
+        ,2
+        ,
+      )
+      ,
     )
   }
 
   return (
-    <div className="page">
-      <section className="panel">
-        <h1 style={{ textAlign: "center"}}>어떤 작업을 할까요?</h1>
+    <div className={embedded ? "" : "page"}>
+      <section className={embedded ? "" : "panel"}>
+        <h1 style={{ textAlign: "center"}}> 계약서 파일 업로드</h1>
         <p className="muted" style={{ textAlign: "center"}}>
-          예를 들면 계약서를 첨부해서 분석해볼까요? {/*랜덤 문구로?*/}
+          계약서 파일을 여기에 드래그해보세요. {/*랜덤 문구로?*/}
         </p>
-        <div className="agent-button-grid">
-          <button
-            className={`agent-button ${isDragging ? "dragging" : ""}`}
-            onClick={() => file_input.current?.click()}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <input
-              type="file"
-              ref={file_input}
-              style={{ display: "none" }}
-              onChange={handleFileSelect}
-            />
-            <div className="icon-placeholder">
-              <img src={contractIcon} alt="계약서 업로드" width="48" height="48" />
-            </div>
-            <span>{isDragging ? "여기에 드래그해보세요!" : "계약서 파일 업로드"}</span> {/*==true 없어도 됨*/}
-          </button>
+        <div className="agent-layout">
+          <div className="agent-main-upload">
+            <button
+              className={`agent-button upload-button ${is_dragging ? "dragging" : ""}`}
+              onClick={() => file_input.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input
+                type="file"
+                ref={file_input}
+                style={{ display: "none" }}
+                onChange={handleFileSelect}
+              />
+              <div className="icon-placeholder">
+                <img src={contractIcon} alt="계약서 업로드" width="48" height="48" />
+              </div>
+              <span>{is_uploading ? "업로드 중..." : is_dragging ? "여기에 드래그해보세요!" : "계약서 파일 업로드"}</span>
+            </button>
+          </div>
 
-          <button className="agent-button" onClick={() => handleAgentClick("gmail")}>
-            <div className="icon-placeholder">
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png?20221017173631" 
-                alt="Gmail" 
-                width="48" 
-                height="38" 
-              />
-            </div>
-            <span>{labelMap.gmail}</span>
-          </button>
-          <button className="agent-button" onClick={() => handleAgentClick("drive")}>
-            <div className="icon-placeholder">
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/512px-Google_Drive_icon_%282020%29.svg.png?20221103153031" 
-                alt="Google Drive" 
-                width="48" 
-                height="48" 
-              />
-            </div>
-            <span>{labelMap.drive}</span>
-          </button>
+          <h3 style={{ fontSize: "1rem", color: "#64748b", margin: "0.5rem 0 0" }}>다른 서비스에서 가져오기</h3>
 
-          <button className="agent-button" onClick={() => handleAgentClick("calendar")}>
-            <div className="icon-placeholder">
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/512px-Google_Calendar_icon_%282020%29.svg.png?20221017173603" 
-                alt="Google Calendar" 
-                width="48" 
-                height="48" 
-              />
-            </div>
-            <span>{labelMap.calendar}</span>
-          </button>
+          <div className="agent-integrations">
+            <button className="agent-button small-button" onClick={() => handleAgentClick("gmail")}>
+              <div className="icon-placeholder">
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/512px-Gmail_icon_%282020%29.svg.png?20221017173631" 
+                  alt="Gmail" 
+                  width="32" 
+                  height="25" 
+                />
+              </div>
+              <span>{label_map.gmail}</span>
+            </button>
+            <button className="agent-button small-button" onClick={() => handleAgentClick("drive")}>
+              <div className="icon-placeholder">
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Google_Drive_icon_%282020%29.svg/512px-Google_Drive_icon_%282020%29.svg.png?20221103153031" 
+                  alt="Google Drive" 
+                  width="32" 
+                  height="32" 
+                />
+              </div>
+              <span>{label_map.drive}</span>
+            </button>
+
+            <button className="agent-button small-button" onClick={() => handleAgentClick("calendar")}>
+              <div className="icon-placeholder">
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Google_Calendar_icon_%282020%29.svg/512px-Google_Calendar_icon_%282020%29.svg.png?20221017173603" 
+                  alt="Google Calendar" 
+                  width="32" 
+                  height="32" 
+                />
+              </div>
+              <span>{label_map.calendar}</span>
+            </button>
+          </div>
         </div>
       </section>
 
-      {selectedAgent && (
+      {selected_agent && (
         <div className="modal-overlay" onClick={closePopup}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <header className="modal-header">
-              <h3>{labelMap[selectedAgent]}</h3>
+              <h3>{label_map[selected_agent]}</h3>
               <button className="close-button" onClick={closePopup}>&times;</button>
             </header>
             
-            {selectedAgent === "gmail" && (
+            {selected_agent === "gmail" && (
               <form className="form" onSubmit={handleAgentSubmit}>
                 <label>
                   받는 사람
@@ -204,7 +221,7 @@ function AgentPage() {
               </form>
             )}
 
-            {selectedAgent === "drive" && (
+            {selected_agent === "drive" && (
               <form className="form" onSubmit={handleAgentSubmit}>
                 <label>
                   파일 링크
@@ -221,7 +238,7 @@ function AgentPage() {
               </form>
             )}
 
-            {selectedAgent === "calendar" && (
+            {selected_agent === "calendar" && (
               <form className="form" onSubmit={handleAgentSubmit}>
                 <label>
                   일정 제목
