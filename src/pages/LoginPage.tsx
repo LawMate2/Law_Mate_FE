@@ -1,6 +1,8 @@
 import './pages.css'
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
+import { useNavigate, Navigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 const slideshow = [
   {
@@ -24,47 +26,107 @@ const slideshow_time = 5000
 
 function LoginPage() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
   const [message, setMessage] = useState('')
-  const [currentSlide, setCurrentSlide] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
+  const { devLogin, setAuthData, isAuthenticated, loading } = useAuth()
 
+  // 모든 hooks를 조건문 이전에 호출
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slideshow.length)
-    }, slideshow_time)
-    return () => clearInterval(timer) //TODO: 수동으로 넘길때 slide 타이머 초기화
-  }, [])
+    // 팝업으로부터 메시지 수신
+    const handleMessage = async (event: MessageEvent) => {
+      // 보안: origin 확인
+      if (event.origin !== window.location.origin) return
 
-  const handleSubmit = (event: FormEvent) => {
+      if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+        const { accessToken, refreshToken, user } = event.data
+
+        // AuthContext의 setAuthData 메서드를 사용하여 인증 정보 저장
+        setAuthData(accessToken, refreshToken, user)
+
+        setMessage('로그인 성공! 리다이렉트 중...')
+        // isAuthenticated가 true로 변경되면 자동으로 리다이렉트됨
+      } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+        setMessage(`로그인 실패: ${event.data.error}`)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [navigate, setAuthData])
+
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    setMessage(`${email}로 로그인 시도`)
-  }
-
-  const handleGoogleLogin = async () => {
-    const access_token = "토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰"
+    setIsLoading(true)
+    setMessage('로그인 처리 중...')
 
     try {
-      const response = await fetch("http://localhost:8000/auth/google", {
-        method: "POST",
-        headers: {
-          "accept": "application/json"
-          ,"Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          access_token: access_token
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} 오류`)
-      }
-
-      const result = await response.json()
-      setMessage(`${JSON.stringify(result)}: 로그인되었습니다.`)
+      // AuthContext의 devLogin 메서드 사용
+      console.log('[LoginPage] devLogin 호출 전')
+      await devLogin({ email, name: name || undefined })
+      console.log('[LoginPage] devLogin 완료')
+      setMessage('로그인 성공!')
+      // isAuthenticated가 true로 변경되면 자동으로 리다이렉트됨
     } catch (error) {
-      console.error(error)
-      setMessage(`${error}`)
+      console.error('개발용 로그인 실패:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      setMessage(`로그인 실패: ${errorMessage}`)
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  const handleGoogleLogin = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI
+    const scope = 'openid email profile'
+
+    // Google OAuth URL 생성
+    const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+    googleAuthUrl.searchParams.append('client_id', clientId)
+    googleAuthUrl.searchParams.append('redirect_uri', redirectUri)
+    googleAuthUrl.searchParams.append('response_type', 'code')
+    googleAuthUrl.searchParams.append('scope', scope)
+    googleAuthUrl.searchParams.append('access_type', 'offline')
+    googleAuthUrl.searchParams.append('prompt', 'consent')
+
+    // 팝업으로 Google 로그인 열기
+    const width = 700
+    const height = 900
+    const left = window.screenX + (window.outerWidth - width) / 2
+    const top = window.screenY + (window.outerHeight - height) / 2
+
+    window.open(
+      googleAuthUrl.toString(),
+      'Google 로그인',
+      `width=${width},height=${height},left=${left},top=${top}`
+    )
+
+    setMessage('Google 로그인 팝업이 열렸습니다...')
+  }
+
+  console.log('[LoginPage] isAuthenticated:', isAuthenticated, 'loading:', loading)
+
+  // AuthContext 로딩 중일 때 로딩 표시
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        fontSize: '1.2rem',
+        color: '#475569'
+      }}>
+        <div>로딩 중...</div>
+      </div>
+    )
+  }
+
+  // 이미 로그인된 경우 chatbot 페이지로 리다이렉트
+  if (isAuthenticated) {
+    return <Navigate to="/chatbot" replace />
   }
 
   return (
@@ -81,19 +143,29 @@ function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
+              disabled={isLoading}
             />
           </label>
           <label>
-            비밀번호
+            이름 (선택사항)
             <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
+              type="text"
+              placeholder="홍길동"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              disabled={isLoading}
             />
           </label>
-          <button type="submit">로그인</button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            style={{
+              width: "100%"
+              ,alignSelf: "center"
+            }}
+          >
+            {isLoading ? '로그인 중...' : '로그인'}
+          </button>
           <button
             type="button"
             onClick={handleGoogleLogin}
@@ -102,47 +174,54 @@ function LoginPage() {
               ,background: "#ffffff"
               ,color: "#444"
               ,border: "1px solid #ccc"
-              ,width: "auto"
+              ,width: "100%"
               ,alignSelf: "center"
               ,display: "flex"
               ,alignItems: "center"
+              ,justifyContent: "center"
               ,gap: "0.5rem"
-              ,padding: "0.5rem 1rem"
+              ,padding: "0.9rem 1.5rem"
             }}
           >
-            <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Google_Favicon_2025.svg" 
-              alt="Google 로그인" 
-              width="24" 
-              height="24" 
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Google_Favicon_2025.svg"
+              alt="Google 로그인"
+              width="24"
+              height="24"
             />
             <span>Google 로그인</span>
           </button>
         </form>
         {message && <p className="feedback">{message}</p>}
       </section>
-      <section 
-        className="panel login-info"
-        style={{
-          backgroundImage: `linear-gradient(135deg, rgba(29, 78, 216, 0.85), rgba(59, 130, 246, 0.85)), url(${slideshow[currentSlide].image})`,
-          transition: "background-image 0.5s ease-in-out"
-        }}
-      >
-        <div className="slide-content fade-in" key={currentSlide}>
-          <h2>{slideshow[currentSlide].title}</h2>
-          <p>{slideshow[currentSlide].desc}</p>
-        </div>
-        <div className="slide-indicators">
-          {slideshow.map((_, idx) => (
-            <span 
-              key={idx} 
-              className={`indicator ${idx === currentSlide ? 'active' : ''}`}
-              onClick={() => setCurrentSlide(idx)}
-            />
-          ))}
-        </div>
+      <section className="panel login-info">
+        <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700' }}>
+          당신의 스마트한 법률 파트너
+        </h2>
+        <ul style={{
+          listStyle: 'none',
+          padding: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.2rem',
+          fontSize: '1.05rem',
+          lineHeight: '1.6'
+        }}>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>✅</span>
+            <span>AI 기반 법률 상담으로 궁금증을 즉시 해결</span>
+          </li>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>✅</span>
+            <span>계약서 PDF를 업로드하면 자동으로 리스크 분석</span>
+          </li>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>✅</span>
+            <span>구글 캘린더, 드라이브, Gmail 연동으로 법률 일정과 문서를 한 곳에서 관리</span>
+          </li>
+        </ul>
       </section>
-    </div>  //TODO: 자동으로 넘어가ㅡㄴ 슬라이드쇼로 변경 (예: 왜 LawMate인가요?)
+    </div>
   )
 }
 

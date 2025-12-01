@@ -19,7 +19,7 @@
 }
 
 .login-info {
-  background: linear-gradient(135deg, rgba(29, 78, 216, 0.85), rgba(59, 130, 246, 0.85));
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.85), rgba(59, 130, 246, 0.85)), url("../images/justitia.jpg");
   background-size: cover;
   background-position: center;
   color: #fff;
@@ -138,13 +138,14 @@
 
 .chat-layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 300px minmax(0, 1fr);
   height: calc(100vh - 4rem);
 }
 
 .chat-log {
   border-right: 1px solid #e2e8f0;
   padding-right: 1rem;
+  width: 300px;
 }
 
 .chat-log ul {
@@ -162,6 +163,12 @@
   background: #f1f5f9;
   cursor: pointer;
   transition: background 150ms ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 64px;
+  max-height: 88px;
+  overflow: hidden;
 }
 
 .chat-log li.active,
@@ -169,48 +176,117 @@
   background: #dbeafe;
 }
 
+.chat-list-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.chat-delete {
+  display: none;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  border-radius: 10px;
+  padding: 0.25rem 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chat-log li:hover .chat-delete {
+  display: inline-flex;
+}
+
+.chat-delete:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
 .chat-window {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-width: 900px;
 }
 
 .messages {
   flex: 1;
   overflow-y: auto;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #1d4ed8;
   border-radius: 16px;
   padding: 1rem;
-  background: #f8fafc;
+  background: #eff6ff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .message {
-  margin-bottom: 1rem;
   display: flex;
-  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  width: 100%;
 }
 
 .message.user {
-  align-items: flex-end;
-  text-align: right;
+  justify-content: flex-end;
 }
 
 .message.assistant {
-  align-items: flex-start;
-  text-align: left;
+  justify-content: flex-start;
 }
 
-.message strong {
-  display: block;
-  margin-bottom: 0.3rem;
+.message-card {
+  max-width: min(80%, 760px);
+  display: inline-block;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #1d4ed8;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.08);
 }
 
-.message.user strong {
-  color: #1d4ed8;
+.message.assistant .message-card {
+  background: #ffffff;
+  color: #0f172a;
+  border: none;
+  box-shadow: none;
 }
 
-.message.assistant strong {
-  color: #16a34a;
+.message.user .message-card {
+  background: #1d4ed8;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+
+.message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.message-card p {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+.message-time {
+  font-size: 0.8rem;
+}
+
+.message.assistant .message-time {
+  color: #475569;
+}
+
+.message.user .message-time {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .message span {
@@ -396,6 +472,41 @@
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 1; }
+}
+
+.loading-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+}
+
+.loading-dots .dots {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.loading-dots .dots span {
+  animation: dotPulse 1.4s infinite;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.loading-dots .dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-dots .dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots .dots span:nth-child(3) {
+  animation-delay: 0.4s;
 }
 
 pre {

@@ -3,6 +3,8 @@ import type { FormEvent, ChangeEvent, DragEvent } from "react"
 import "./pages.css"
 import contractIcon from "../assets/contract.png"
 
+const API_BASE_URL = import.meta.env.VITE_BASE_API_URL || 'http://localhost:8000'
+
 type AgentAction = "gmail" | "drive" | "calendar"
 
 type AgentForm = {
@@ -33,42 +35,7 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
   const [is_dragging, setIsDragging] = useState(false)
   const [is_uploading, setIsUploading] = useState(false)
   const file_input = useRef<HTMLInputElement>(null)
-
-  const uploadFile = async (file: File) => {
-    const isImage = file.type.startsWith('image/')
-    const url = isImage 
-      ? "http://localhost:8000/ocr/extract" 
-      : "http://localhost:8000/documents/upload"  //AI: Copilot - URL도 삼중조건문 분기 가능
-    
-    setIsUploading(true)
-    setResult(isImage ? "OCR 분석 중..." : "문서 업로드 중...")
-    
-    const formData = new FormData()
-    formData.append("file", file)
-
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "accept": "application/json",
-        },
-        body: formData
-      })
-
-      if (!response.ok) throw new Error(`HTTP ${response.status} 오류`)
-
-      const result = await response.json()
-      setResult(JSON.stringify(result, null, 2))
-      if (onUploadSuccess) {
-        onUploadSuccess(result, isImage, file)
-      }
-    } catch (error) {
-      console.error(`업로드 실패: ${error}`)
-      setResult(`업로드 실패: ${error}`)
-    } finally {
-      setIsUploading(false)
-    }
-  }
+  const authToken = localStorage.getItem('access_token')
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0])uploadFile(e.target.files[0])
@@ -88,6 +55,89 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
     e.preventDefault()
     setIsDragging(false)
     if (e.dataTransfer.files && e.dataTransfer.files[0])uploadFile(e.dataTransfer.files[0])
+  }
+
+  const uploadFile = async (file: File) => {
+    const isImage = file.type.startsWith('image/')
+    const uploadUrl = isImage
+      ? `${API_BASE_URL}/ocr/extract`
+      : `${API_BASE_URL}/documents/upload`
+    const analyzeUrl = `${API_BASE_URL}/ocr/analyze`
+    const authHeaders = authToken ? { Authorization: `Bearer ${authToken}` } : {}
+
+    setIsUploading(true)
+    setResult(isImage ? "OCR 분석 중..." : "문서 업로드 중...")
+
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          ...authHeaders,
+        },
+        body: formData
+      })
+
+      if (!response.ok) throw new Error(`HTTP ${response.status} 오류`)
+
+      const uploadResult = await response.json()
+      const extractedText: string = uploadResult.text || uploadResult.content || ""
+
+      setResult(
+        JSON.stringify(
+          {
+            step: isImage ? "OCR 완료" : "업로드 완료"
+            ,file: file.name
+            ,text_preview: extractedText?.slice(0, 500)
+            ,raw: uploadResult
+          }
+          ,null
+          ,2
+        )
+      )
+
+      if (extractedText) {
+        setResult(prev => `${prev}\n\n계약서 검토 중...`)
+        const analyzeResponse = await fetch(analyzeUrl, {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "Content-Type": "application/json",
+            ...authHeaders,
+          },
+          body: JSON.stringify({
+            text: extractedText,
+            filename: file.name
+          })
+        })
+
+        if (!analyzeResponse.ok) throw new Error(`분석 HTTP ${analyzeResponse.status} 오류`)
+        const analyzeResult = await analyzeResponse.json()
+
+        const combined = {
+          file: file.name,
+          text: extractedText,
+          analysis: analyzeResult,
+        }
+        setResult(JSON.stringify(combined, null, 2))
+        if (onUploadSuccess) {
+          onUploadSuccess(combined, isImage)
+        }
+      } else {
+        setResult(prev => `${prev}\n\n텍스트를 추출하지 못했습니다.`)
+        if (onUploadSuccess) {
+          onUploadSuccess({ text: "", raw: uploadResult }, isImage)
+        }
+      }
+    } catch (error) {
+      console.error(`업로드 실패: ${error}`)
+      setResult(`업로드 실패: ${error}`)
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const handleAgentClick = (type: AgentAction) => {
