@@ -1,6 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
-import { AgentPage, ChatbotPage, LoginPage, GoogleCallbackPage } from './pages'
+import { ChatbotPage, LoginPage, GoogleCallbackPage } from './pages'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { useAuth } from './contexts/AuthContext'
 
@@ -73,7 +73,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/agent" element={<AgentPage />} />
         </Routes>
       </main>
     </div>

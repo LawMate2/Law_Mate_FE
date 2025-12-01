@@ -30,12 +30,24 @@ type StoredChats = {
   chats: Chat[]
 }
 
-const createEmptyChat = (title = '새로운 대화'): Chat => ({
-  id: crypto.randomUUID(),
-  title,
-  messages: [],
-  created_at: new Date().toISOString(),
-})
+const createEmptyChat = (title = '새로운 대화', withIntro = true): Chat => {
+  const intro: Message | null = withIntro
+    ? {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content:
+          'LawMate는 법적인 정보만 제공하며, 정확한 법률 자문은 변호사 등 법률 전문가와 상담하세요.',
+        created_at: new Date().toISOString(),
+      }
+    : null
+
+  return {
+    id: crypto.randomUUID(),
+    title,
+    messages: intro ? [intro] : [],
+    created_at: new Date().toISOString(),
+  }
+}
 
 const getStorageKey = (userId?: string) =>
   userId ? `lawmate_chats_${userId}` : ''
@@ -391,7 +403,7 @@ function ChatbotPage() {
                         {formatTime(message.created_at) || '방금'}
                       </time>
                     </div>
-                    <p>{message.content}</p>
+                    <p style={{ whiteSpace: 'pre-wrap' }}>{message.content}</p>
                   </div>
                 </article>
               ))}
@@ -450,7 +462,7 @@ function ChatbotPage() {
           />
           <button type="submit" style={{ minWidth: '80px', height: '48px', alignSelf: 'center' }}>
             <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />  {/*AI: Copilot - svg 생성*/} {/*TODO: Ctrl+Enter 단축키 연결*/}
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />  {/*AI: Sonnet 4.5 - svg 생성*/} {/*TODO: Ctrl+Enter 단축키 연결*/}
             </svg>
           </button>
         </form>
@@ -463,6 +475,7 @@ function ChatbotPage() {
             </header>
             <AgentPage
               embedded={true}
+              chatMessages={active_chat?.messages || []}
               onUploadSuccess={(result, isImage) => {
                 setShowAgentPopup(false)
                 const initialMessage = {
@@ -474,11 +487,31 @@ function ChatbotPage() {
                   created_at: new Date().toISOString(),
                 }
                 const newChat = {
-                  ...createEmptyChat("계약서 분석"),
+                  ...createEmptyChat("계약서 분석", false),
                   messages: [initialMessage],
                 }
                 setChats((prev) => [newChat, ...prev])
                 setChatID(newChat.id)
+              }}
+              onMCPSuccess={(type, result) => {
+                setShowAgentPopup(false)
+                const successMessage = {
+                  id: crypto.randomUUID(),
+                  role: "assistant" as const,
+                  content: type === 'gmail'
+                    ? `이메일이 성공적으로 전송되었습니다!\n\n${JSON.stringify(result, null, 2)}`
+                    : type === 'calendar'
+                    ? `일정이 성공적으로 등록되었습니다!\n\n${JSON.stringify(result, null, 2)}`
+                    : `파일이 Google Drive에 성공적으로 업로드되었습니다!\n\n${JSON.stringify(result, null, 2)}`,
+                  created_at: new Date().toISOString(),
+                }
+                setChats((prev) =>
+                  prev.map((chat) =>
+                    chat.id === active_chat?.id
+                      ? { ...chat, messages: [...chat.messages, successMessage] }
+                      : chat
+                  )
+                )
               }}
             />
           </div>
