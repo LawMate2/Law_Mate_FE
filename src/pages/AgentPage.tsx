@@ -2,20 +2,13 @@ import { useState, useRef } from "react"
 import type { FormEvent, ChangeEvent, DragEvent } from "react"
 import "./pages.css"
 import contractIcon from "../assets/contract.png"
+import { aiApi } from "../services/api"
+import type { ChatMessage } from "../services/api"
 
 const API_BASE_URL = import.meta.env.VITE_BASE_API_URL || 'http://localhost:8000'
+const MCP_API_BASE_URL = import.meta.env.VITE_MCP_API_URL || API_BASE_URL
 
 type AgentAction = "gmail" | "drive" | "calendar"
-
-type AgentForm = {
-  subject?: string
-  body?: string
-  recipient?: string
-  fileUrl?: string
-  eventTitle?: string
-  eventDate?: string
-  eventDescription?: string
-}
 
 const label_map: Record<AgentAction, string> = {
   gmail: "Gmail"
@@ -24,18 +17,61 @@ const label_map: Record<AgentAction, string> = {
   ,
 }
 
-type AgentPageProps = {
-  embedded?: boolean
-  onUploadSuccess?: (result: any, isImage?: boolean, file?: File) => void
+type Message = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  created_at?: string
 }
 
-function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
+type AgentPageProps = {
+  embedded?: boolean
+  onUploadSuccess?: (result: Record<string, unknown>, isImage?: boolean, file?: File) => void
+  onMCPSuccess?: (type: AgentAction, result: any) => void
+  chatMessages?: Message[]
+}
+
+function AgentPage({ embedded, onUploadSuccess, onMCPSuccess, chatMessages = [] }: AgentPageProps) {
   const [selected_agent, setSelectedAgent] = useState<AgentAction | null>(null)
   const [result, setResult] = useState("")
   const [is_dragging, setIsDragging] = useState(false)
   const [is_uploading, setIsUploading] = useState(false)
+  const [is_agent_sending, setIsAgentSending] = useState(false)
+  const [prefilled_data, setPrefilledData] = useState<Record<string, any>>({})
   const file_input = useRef<HTMLInputElement>(null)
   const authToken = localStorage.getItem('access_token')
+
+  // Extract information from chat messages using AI
+  const extractInfoFromChat = async (type: AgentAction): Promise<Record<string, any>> => {
+    if (!chatMessages.length) return {}
+
+    try {
+      // Convert messages to ChatMessage format
+      const messages: ChatMessage[] = chatMessages.map(m => ({
+        role: m.role,
+        content: m.content,
+        created_at: m.created_at,
+      }))
+
+      // Call AI analysis API
+      const analysis = await aiApi.analyzeForMCP(type, messages)
+
+      // Update result message based on confidence
+      if (analysis.confidence === 'high') {
+        setResult("✅ AI가 대화 내용을 분석하여 정보를 자동으로 채웠습니다. 확인 후 수정해주세요.")
+      } else if (analysis.confidence === 'medium') {
+        setResult(`⚠️ ${analysis.suggestions || "일부 정보가 누락되었을 수 있습니다. 확인 후 추가 입력해주세요."}`)
+      } else {
+        setResult(`ℹ️ ${analysis.suggestions || "대화에서 충분한 정보를 찾을 수 없습니다. 직접 입력해주세요."}`)
+      }
+
+      return analysis.extracted_data
+    } catch (error) {
+      console.error('AI 분석 실패:', error)
+      setResult("⚠️ AI 분석에 실패했습니다. 수동으로 입력해주세요.")
+      return {}
+    }
+  }
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0])uploadFile(e.target.files[0])
@@ -59,14 +95,16 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
 
   const uploadFile = async (file: File) => {
     const isImage = file.type.startsWith('image/')
-    const uploadUrl = isImage
+    const isPdf = file.type === 'application/pdf'
+    const useExtract = isImage || isPdf
+    const uploadUrl = useExtract
       ? `${API_BASE_URL}/ocr/extract`
       : `${API_BASE_URL}/documents/upload`
     const analyzeUrl = `${API_BASE_URL}/ocr/analyze`
     const authHeaders = authToken ? { Authorization: `Bearer ${authToken}` } : {}
 
     setIsUploading(true)
-    setResult(isImage ? "OCR 분석 중..." : "문서 업로드 중...")
+    setResult(useExtract ? "텍스트 추출 중..." : "문서 업로드 중...")
 
     const formData = new FormData()
     formData.append("file", file)
@@ -89,7 +127,7 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
       setResult(
         JSON.stringify(
           {
-            step: isImage ? "OCR 완료" : "업로드 완료"
+            step: useExtract ? "텍스트 추출 완료" : "업로드 완료"
             ,file: file.name
             ,text_preview: extractedText?.slice(0, 500)
             ,raw: uploadResult
@@ -124,12 +162,12 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
         }
         setResult(JSON.stringify(combined, null, 2))
         if (onUploadSuccess) {
-          onUploadSuccess(combined, isImage)
+          onUploadSuccess(combined, isImage, file)
         }
       } else {
         setResult(prev => `${prev}\n\n텍스트를 추출하지 못했습니다.`)
         if (onUploadSuccess) {
-          onUploadSuccess({ text: "", raw: uploadResult }, isImage)
+          onUploadSuccess({ text: "", raw: uploadResult }, isImage, file)
         }
       }
     } catch (error) {
@@ -140,36 +178,151 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
     }
   }
 
-  const handleAgentClick = (type: AgentAction) => {
+  const handleAgentClick = async (type: AgentAction) => {
     setSelectedAgent(type)
-    setResult("")
+    setResult("🤖 AI가 대화 내용을 분석하고 있습니다...")
+    setPrefilledData({})
+
+    // Extract and prefill data from chat messages using AI
+    const extracted = await extractInfoFromChat(type)
+    setPrefilledData(extracted)
   }
 
   const closePopup = () => {
     setSelectedAgent(null)
   }
 
-  const handleAgentSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const toBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const result = reader.result
+        if (typeof result === 'string') {
+          const base64 = result.split(',')[1] || result
+          resolve(base64)
+        } else {
+          reject(new Error('파일을 읽을 수 없습니다.'))
+        }
+      }
+      reader.onerror = () => reject(reader.error || new Error('파일 읽기 실패'))
+      reader.readAsDataURL(file)
+    })
+
+  const handleAgentSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!selected_agent) return
 
     const form = new FormData(event.currentTarget)
-    const payload: AgentForm = Object.fromEntries(form.entries())
+    setIsAgentSending(true)
 
-    setResult(
-      JSON.stringify(
-        {
-          agent: selected_agent
-          ,payload
-          ,status: "MCP 서버 연동 시 실제 처리 결과가 표시됩니다."
-          ,
+    try {
+      if (selected_agent === "gmail") {
+        const payload = {
+          to: form.get("recipient"),
+          subject: form.get("subject"),
+          body: form.get("body"),
+          cc: [],
+          bcc: [],
+          html: false,
         }
-        ,null
-        ,2
-        ,
-      )
-      ,
-    )
+        const response = await fetch(`${MCP_API_BASE_URL}/tasks`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "accept": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+          },
+          body: JSON.stringify({
+            type: "email",
+            payload,
+            timezone: "Asia/Seoul",
+          })
+        })
+        const data = await response.json()
+        setResult(JSON.stringify(data, null, 2))
+
+        // Call success callback if provided
+        if (onMCPSuccess) {
+          onMCPSuccess("gmail", data)
+        }
+        return
+      }
+
+      if (selected_agent === "calendar") {
+        const start_time = form.get("eventDate") as string
+        const end_time = form.get("eventEnd") as string || new Date(new Date(start_time).getTime() + 60 * 60 * 1000).toISOString()
+        const payload = {
+          summary: form.get("eventTitle"),
+          start_time,
+          end_time,
+          description: form.get("eventDescription"),
+        }
+        const response = await fetch(`${MCP_API_BASE_URL}/tasks`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "accept": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+          },
+          body: JSON.stringify({
+            type: "calendar",
+            payload,
+            timezone: "Asia/Seoul",
+          })
+        })
+        const data = await response.json()
+        setResult(JSON.stringify(data, null, 2))
+
+        // Call success callback if provided
+        if (onMCPSuccess) {
+          onMCPSuccess("calendar", data)
+        }
+        return
+      }
+
+      if (selected_agent === "drive") {
+        const fileInput = event.currentTarget.querySelector('input[name="driveFile"]') as HTMLInputElement | null
+        const file = fileInput?.files?.[0]
+        if (!file) throw new Error("업로드할 파일을 선택해 주세요.")
+        const contractName = (form.get("contractName") as string) || file.name
+        const folderName = (form.get("folderName") as string) || "Contracts"
+        const file_content_b64 = await toBase64(file)
+
+        const payload = {
+          contract_name: contractName,
+          folder_name: folderName,
+          file_name: file.name,
+          file_content_b64,
+        }
+
+        const response = await fetch(`${MCP_API_BASE_URL}/tasks`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "accept": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+          },
+          body: JSON.stringify({
+            type: "drive",
+            payload,
+            timezone: "Asia/Seoul",
+          })
+        })
+        const data = await response.json()
+        setResult(JSON.stringify(data, null, 2))
+
+        // Call success callback if provided
+        if (onMCPSuccess) {
+          onMCPSuccess("drive", data)
+        }
+        return
+      }
+    } catch (error) {
+      console.error("에이전트 요청 실패:", error)
+      setResult(`에이전트 요청 실패: ${error}`)
+    } finally {
+      setIsAgentSending(false)
+    }
   }
 
   return (
@@ -254,19 +407,38 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
               <form className="form" onSubmit={handleAgentSubmit}>
                 <label>
                   받는 사람
-                  <input name="recipient" type="email" placeholder="client@example.com" required />
+                  <input
+                    name="recipient"
+                    type="email"
+                    placeholder="client@example.com"
+                    defaultValue={prefilled_data.recipient || ""}
+                    required
+                  />
                 </label>
                 <label>
                   제목
-                  <input name="subject" placeholder="메일 제목" required />
+                  <input
+                    name="subject"
+                    placeholder="메일 제목"
+                    defaultValue={prefilled_data.subject || ""}
+                    required
+                  />
                 </label>
                 <label>
                   내용
-                  <textarea name="body" placeholder="메일 내용을 작성하세요." rows={4} required />
+                  <textarea
+                    name="body"
+                    placeholder="메일 내용을 작성하세요."
+                    rows={4}
+                    defaultValue={prefilled_data.body || ""}
+                    required
+                  />
                 </label>
-                <button type="submit">메일 전송</button>
+                <button type="submit" disabled={is_agent_sending}>
+                  {is_agent_sending ? "전송 중..." : "메일 전송"}
+                </button>
                 <footer className="muted" style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
-                  OAuth 인증 후 Gmail API 호출 로직을 연결하세요.
+                  MCP 서버를 통해 Gmail API로 바로 전송합니다.
                 </footer>
               </form>
             )}
@@ -274,16 +446,30 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
             {selected_agent === "drive" && (
               <form className="form" onSubmit={handleAgentSubmit}>
                 <label>
-                  파일 링크
-                  <input name="fileUrl" placeholder="https://drive.google.com/…" required />
+                  계약서 이름
+                  <input
+                    name="contractName"
+                    placeholder="2024_계약서.pdf"
+                    defaultValue={prefilled_data.contractName || ""}
+                  />
                 </label>
                 <label>
-                  공유 대상
-                  <input name="recipient" placeholder="lawyer@firm.com" required />
+                  저장 폴더
+                  <input
+                    name="folderName"
+                    placeholder="Contracts"
+                    defaultValue={prefilled_data.folderName || "Contracts"}
+                  />
                 </label>
-                <button type="submit">계약서 공유</button>
+                <label>
+                  업로드 파일
+                  <input name="driveFile" type="file" required />
+                </label>
+                <button type="submit" disabled={is_agent_sending}>
+                  {is_agent_sending ? "업로드 중..." : "계약서 업로드"}
+                </button>
                 <footer className="muted" style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
-                  파일 ID 파싱과 권한 설정을 MCP 서버에서 처리하면 됩니다.
+                  MCP 서버가 Drive 계약서 전용 폴더에 업로드합니다.
                 </footer>
               </form>
             )}
@@ -292,17 +478,42 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
               <form className="form" onSubmit={handleAgentSubmit}>
                 <label>
                   일정 제목
-                  <input name="eventTitle" placeholder="계약서 서명" required />
+                  <input
+                    name="eventTitle"
+                    placeholder="계약서 서명"
+                    defaultValue={prefilled_data.eventTitle || ""}
+                    required
+                  />
                 </label>
                 <label>
-                  일정 날짜
-                  <input name="eventDate" type="datetime-local" required />
+                  시작 일시
+                  <input
+                    name="eventDate"
+                    type="datetime-local"
+                    defaultValue={prefilled_data.eventDate || ""}
+                    required
+                  />
+                </label>
+                <label>
+                  종료 일시
+                  <input
+                    name="eventEnd"
+                    type="datetime-local"
+                    defaultValue={prefilled_data.eventEnd || ""}
+                  />
                 </label>
                 <label>
                   설명
-                  <textarea name="eventDescription" placeholder="중요 참고 사항을 남겨주세요." rows={3} />
+                  <textarea
+                    name="eventDescription"
+                    placeholder="중요 참고 사항을 남겨주세요."
+                    rows={3}
+                    defaultValue={prefilled_data.eventDescription || ""}
+                  />
                 </label>
-                <button type="submit">일정 등록</button>
+                <button type="submit" disabled={is_agent_sending}>
+                  {is_agent_sending ? "등록 중..." : "일정 등록"}
+                </button>
                 <footer className="muted" style={{ fontSize: "0.9rem", marginTop: "1rem" }}>
                   캘린더 ID와 타임존 처리를 MCP 서버와 연결해 주세요.
                 </footer>

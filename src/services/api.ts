@@ -123,3 +123,150 @@ export const authApi = {
     })
   },
 }
+
+// MCP API types (Google Services Integration)
+export interface EmailPayload {
+  to: string
+  subject: string
+  body: string
+  cc?: string[]
+  bcc?: string[]
+  html?: boolean
+  attachments?: string[]
+}
+
+export interface CalendarPayload {
+  summary: string
+  start_time: string // ISO 8601 format
+  end_time: string // ISO 8601 format
+  description?: string
+  location?: string
+  attendees?: string[]
+  reminders?: number[] // minutes before event
+  all_day?: boolean
+}
+
+export interface DrivePayload {
+  contract_name: string
+  file_path?: string
+  file_content_b64?: string
+  file_name?: string
+  contract_date?: string
+  parties?: string[]
+  folder_name?: string
+}
+
+export interface MCPTaskRequest {
+  request_id?: string
+  type: 'email' | 'calendar' | 'drive'
+  timezone?: string
+  payload: EmailPayload | CalendarPayload | DrivePayload
+}
+
+export interface MCPTaskResponse {
+  success: boolean
+  request_id: string
+  type: string
+  result?: any
+  error?: string
+  details?: any
+}
+
+// MCP API functions (Google Services Integration)
+const MCP_BASE_URL = import.meta.env.VITE_MCP_API_URL ?? 'http://localhost:8001'
+
+export const mcpApi = {
+  baseURL: MCP_BASE_URL,
+
+  /**
+   * Send email via Gmail
+   */
+  async sendEmail(payload: EmailPayload): Promise<MCPTaskResponse> {
+    return api.request<MCPTaskResponse>(`${this.baseURL}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'email',
+        payload,
+      }),
+    })
+  },
+
+  /**
+   * Create calendar event
+   */
+  async createCalendarEvent(
+    payload: CalendarPayload,
+    timezone: string = 'Asia/Seoul'
+  ): Promise<MCPTaskResponse> {
+    return api.request<MCPTaskResponse>(`${this.baseURL}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'calendar',
+        timezone,
+        payload,
+      }),
+    })
+  },
+
+  /**
+   * Upload file to Google Drive
+   */
+  async uploadToDrive(payload: DrivePayload): Promise<MCPTaskResponse> {
+    return api.request<MCPTaskResponse>(`${this.baseURL}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'drive',
+        payload,
+      }),
+    })
+  },
+
+  /**
+   * Generic task submission
+   */
+  async submitTask(task: MCPTaskRequest): Promise<MCPTaskResponse> {
+    return api.request<MCPTaskResponse>(`${this.baseURL}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify(task),
+    })
+  },
+}
+
+// AI Analysis API types
+export interface ChatMessage {
+  id?: string
+  role: 'user' | 'assistant'
+  content: string
+  created_at?: string
+}
+
+export interface MCPAnalysisRequest {
+  task_type: 'gmail' | 'calendar' | 'drive'
+  conversation_messages: ChatMessage[]
+}
+
+export interface MCPAnalysisResponse {
+  task_type: string
+  extracted_data: Record<string, any>
+  confidence: 'high' | 'medium' | 'low'
+  suggestions?: string
+}
+
+// AI Analysis API functions
+export const aiApi = {
+  /**
+   * Analyze conversation for MCP task using AI
+   */
+  async analyzeForMCP(
+    taskType: 'gmail' | 'calendar' | 'drive',
+    messages: ChatMessage[]
+  ): Promise<MCPAnalysisResponse> {
+    return api.request<MCPAnalysisResponse>('/chat/analyze-for-mcp', {
+      method: 'POST',
+      body: JSON.stringify({
+        task_type: taskType,
+        conversation_messages: messages,
+      }),
+    })
+  },
+}
