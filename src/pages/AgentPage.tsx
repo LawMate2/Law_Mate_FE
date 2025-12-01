@@ -24,7 +24,7 @@ const label_map: Record<AgentAction, string> = {
 
 type AgentPageProps = {
   embedded?: boolean
-  onUploadSuccess?: (result: any, isImage?: boolean) => void
+  onUploadSuccess?: (result: any, isImage?: boolean, file?: File) => void
 }
 
 function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
@@ -38,7 +38,7 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
     const isImage = file.type.startsWith('image/')
     const url = isImage 
       ? "http://localhost:8000/ocr/extract" 
-      : "http://localhost:8000/documents/upload"  //AI: Sonnet 4.5 - URL도 삼중조건문 분기 가능
+      : "http://localhost:8000/documents/upload"  //AI: Copilot - URL도 삼중조건문 분기 가능
     
     setIsUploading(true)
     setResult(isImage ? "OCR 분석 중..." : "문서 업로드 중...")
@@ -60,7 +60,7 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
       const result = await response.json()
       setResult(JSON.stringify(result, null, 2))
       if (onUploadSuccess) {
-        onUploadSuccess(result, isImage)
+        onUploadSuccess(result, isImage, file)
       }
     } catch (error) {
       console.error(`업로드 실패: ${error}`)

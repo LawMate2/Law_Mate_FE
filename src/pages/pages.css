@@ -19,10 +19,60 @@
 }
 
 .login-info {
-  background: linear-gradient(135deg, rgba(29, 78, 216, 0.85), rgba(59, 130, 246, 0.85)), url("https://img.kr.gcp-karroter.net/origin/article/202511/1763204099193bdaa8376b55df1a963a635ecc76984b3c95e47b86d11ad9aff28eb03c55ad5d30.webp?f=webp&q=95&s=1440x1440&t=inside");
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.85), rgba(59, 130, 246, 0.85));
   background-size: cover;
   background-position: center;
   color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+.slide-content {
+  text-align: center;
+  padding: 0 2rem;
+}
+
+.slide-content h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.slide-content p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+.slide-indicators {
+  position: absolute;
+  bottom: 2rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.indicator.active {
+  background: #fff;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
 }
 
 .form {
@@ -45,6 +95,7 @@
   border-radius: 10px;
   padding: 0.75rem 1rem;
   font-size: 1rem;
+  font-family: inherit;
   transition: border 150ms ease;
 }
 
@@ -148,6 +199,10 @@
 
 .message.assistant strong {
   color: #16a34a;
+}
+
+.message span {
+  white-space: pre-wrap;
 }
 
 .chat-input {

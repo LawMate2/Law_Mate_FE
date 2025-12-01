@@ -13,30 +13,19 @@ type Message = {
   id: string
   role: 'user' | 'assistant'
   content: string
+  visible?: boolean //섀도우 포스트
+  image?: string
 }
 
 const chat_history: Chat[] = [
   {
-    id: '1',
-    title: '상담 - 계약서 검토',
+    id: "1",
+    title: "새로운 대화",
     messages: [
-      { id: '1', role: 'user', content: '계약서에서 갑의 책임 조항 정리해줘' },
       {
-        id: '2',
-        role: 'assistant',
-        content: '3.1, 3.2 조항에서 갑의 의무가 명시되어 있고 전자서명 절차를 먼저 검증해야 합니다.',
-      },
-    ],
-  },
-  {
-    id: '2',
-    title: '고객 메일 초안',
-    messages: [
-      { id: '3', role: 'user', content: '고객에게 보낼 요약 메일 써줘' },
-      {
-        id: '4',
-        role: 'assistant',
-        content: '안녕하세요. 요청하신 사건은 이번 주 내로 초안 검토 예정입니다. 필요한 자료를 공유해 주세요.',
+        id: "1",
+        role: "assistant",
+        content: "안녕하세요! 고객님 손 안의 AI 법률 상담사, LawMate입니다. 궁금한 게 있으시다면 무엇이든 물어보세요.",
       },
     ],
   },
@@ -92,9 +81,7 @@ function ChatbotPage() {
           ,
         })
       });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} 오류`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status} 오류`);
       const result = await response.json();
       setChats((prev) =>
         prev.map((chat) =>
@@ -177,9 +164,10 @@ function ChatbotPage() {
         </header> */}
         <div className="messages">
           {active_chat?.messages.length ? (
-            active_chat.messages.map((message) => (
+            active_chat.messages.filter(m => m.visible !== false).map((message) => (  //섀도우 포스트
               <article key={message.id} className={`message ${message.role}`}>
                 <strong>{message.role === 'user' ? '사용자' : 'LawMate'}</strong>
+                {message.image && <img src={message.image} alt="업로드 이미지" style={{ maxWidth: '300px', borderRadius: '8px', display: 'block', marginBottom: '0.5rem' }} />}
                 <span>{message.content}</span>
               </article>
             ))
@@ -220,7 +208,7 @@ function ChatbotPage() {
           />
           <button type="submit" style={{ minWidth: '80px' }}>
             <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />  {/*AI: Sonnet 4.5 - svg 생성*/} {/*TODO: Ctrl+Enter 단축키 연결*/}
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />  {/*AI: Copilot - svg 생성*/} {/*TODO: Ctrl+Enter 단축키 연결*/}
             </svg>
           </button>
         </form>
@@ -233,8 +221,10 @@ function ChatbotPage() {
             </header>
             <AgentPage
               embedded={true}
-              onUploadSuccess={(result, isImage) => {
+              onUploadSuccess={(result, isImage, file) => {
                 setShowAgentPopup(false)
+                const imageUrl = isImage && file ? URL.createObjectURL(file) : undefined
+
                 setChats((prev) =>
                   prev.map((chat) =>
                     chat.id === active_chat.id
@@ -242,11 +232,23 @@ function ChatbotPage() {
                           ...chat
                           ,messages: [
                             ...chat.messages,
+                            ...(isImage ? [{
+                              id: crypto.randomUUID()
+                              ,role: "user" as const
+                              ,content: `[OCR 추출 텍스트]\n${result.text}` //AI: Copilot - 대괄호를 붙이는 편이 좋음
+                              ,visible: false
+                            }] : []),
+                            ...(isImage && imageUrl ? [{
+                              id: crypto.randomUUID()
+                              ,role: "user" as const
+                              ,content: ""
+                              ,image: imageUrl
+                            }] : []),
                             {
                               id: crypto.randomUUID()
                               ,role: "assistant"
                               ,content: isImage 
-                                ? `보내주신 이미지에 적혀 있는 내용이에요.\n\n${result.text}\n\n이걸로 어떤 대화를 나눠볼까요?` 
+                                ? "보내주신 이미지를 확인했어요. 이걸로 어떤 대화를 나눠볼까요?" 
                                 : "보내주신 자료를 잘 받았어요! 이걸로 어떤 대화를 나눠볼까요?"
                             },
                           ],
