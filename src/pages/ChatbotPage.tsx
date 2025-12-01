@@ -56,7 +56,7 @@ function ChatbotPage() {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (!input.trim() || !active_chat) return
-    const newMessage: Message = {
+    const new_message: Message = {
       id: crypto.randomUUID()
       ,role: "user"
       ,content: input.trim()
@@ -67,7 +67,7 @@ function ChatbotPage() {
         chat.id === active_chat.id
           ?{
               ...chat
-              ,messages: [...chat.messages, newMessage]
+              ,messages: [...chat.messages, new_message]
               ,
             }
           :chat
@@ -85,7 +85,7 @@ function ChatbotPage() {
           ,"Content-Type": "application/json"
         }
         ,body: JSON.stringify({
-          message: newMessage.content
+          message: new_message.content
           ,session_id: active_chat.id
           ,conversation_history: //[]
             active_chat.messages
@@ -233,7 +233,7 @@ function ChatbotPage() {
             </header>
             <AgentPage
               embedded={true}
-              onUploadSuccess={(result) => {
+              onUploadSuccess={(result, isImage) => {
                 setShowAgentPopup(false)
                 setChats((prev) =>
                   prev.map((chat) =>
@@ -245,7 +245,9 @@ function ChatbotPage() {
                             {
                               id: crypto.randomUUID()
                               ,role: "assistant"
-                              ,content: "보내주신 자료를 잘 받았어요! 이걸로 어떤 대화를 나눠볼까요?"
+                              ,content: isImage 
+                                ? `보내주신 이미지에 적혀 있는 내용이에요.\n\n${result.text}\n\n이걸로 어떤 대화를 나눠볼까요?` 
+                                : "보내주신 자료를 잘 받았어요! 이걸로 어떤 대화를 나눠볼까요?"
                             },
                           ],
                         }

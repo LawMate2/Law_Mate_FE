@@ -24,7 +24,7 @@ const label_map: Record<AgentAction, string> = {
 
 type AgentPageProps = {
   embedded?: boolean
-  onUploadSuccess?: (result: any) => void
+  onUploadSuccess?: (result: any, isImage?: boolean) => void
 }
 
 function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
@@ -38,7 +38,7 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
     const isImage = file.type.startsWith('image/')
     const url = isImage 
       ? "http://localhost:8000/ocr/extract" 
-      : "http://localhost:8000/documents/upload"  //AI: Sonnet 4.5 - URL도 분기 가능
+      : "http://localhost:8000/documents/upload"  //AI: Sonnet 4.5 - URL도 삼중조건문 분기 가능
     
     setIsUploading(true)
     setResult(isImage ? "OCR 분석 중..." : "문서 업로드 중...")
@@ -60,7 +60,7 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
       const result = await response.json()
       setResult(JSON.stringify(result, null, 2))
       if (onUploadSuccess) {
-        onUploadSuccess(result)
+        onUploadSuccess(result, isImage)
       }
     } catch (error) {
       console.error(`업로드 실패: ${error}`)
@@ -125,9 +125,9 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
   return (
     <div className={embedded ? "" : "page"}>
       <section className={embedded ? "" : "panel"}>
-        <h1 style={{ textAlign: "center"}}> 계약서 파일 업로드</h1>
+        <h1 style={{ textAlign: "center"}}> 파일 업로드</h1>
         <p className="muted" style={{ textAlign: "center"}}>
-          계약서 파일을 여기에 드래그해보세요. {/*랜덤 문구로?*/}
+          문서 사진, 계약서, 판례 등을 여기에 드래그해보세요. {/*랜덤 문구로?*/}
         </p>
         <div className="agent-layout">
           <div className="agent-main-upload">
@@ -145,9 +145,9 @@ function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {
                 onChange={handleFileSelect}
               />
               <div className="icon-placeholder">
-                <img src={contractIcon} alt="계약서 업로드" width="48" height="48" />
+                <img src={contractIcon} alt="파일 업로드" width="48" height="48" />
               </div>
-              <span>{is_uploading ? "업로드 중..." : is_dragging ? "여기에 드래그해보세요!" : "계약서 파일 업로드"}</span>
+              <span>{is_uploading ? "업로드 중..." : is_dragging ? "여기에 드래그해보세요!" : "파일 업로드"}</span>
             </button>
           </div>
 
