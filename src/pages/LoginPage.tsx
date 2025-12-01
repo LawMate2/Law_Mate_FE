@@ -2,7 +2,7 @@ import './pages.css'
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { authApi } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,6 +10,7 @@ function LoginPage() {
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const { devLogin, setAuthData } = useAuth()
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -17,13 +18,8 @@ function LoginPage() {
     setMessage('로그인 처리 중...')
 
     try {
-      // 개발용 로그인 API 호출
-      const result = await authApi.devLogin(email, name || undefined)
-
-      // 토큰 저장
-      localStorage.setItem('access_token', result.access_token)
-      localStorage.setItem('refresh_token', result.refresh_token)
-      localStorage.setItem('user', JSON.stringify(result.user))
+      // AuthContext의 devLogin 메서드 사용
+      await devLogin({ email, name: name || undefined })
 
       setMessage('로그인 성공! 리다이렉트 중...')
       setTimeout(() => navigate('/chatbot'), 1000)
@@ -45,12 +41,8 @@ function LoginPage() {
       if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
         const { accessToken, refreshToken, user } = event.data
 
-        // 토큰 및 사용자 정보 저장
-        localStorage.setItem('access_token', accessToken)
-        localStorage.setItem('refresh_token', refreshToken)
-        if (user) {
-          localStorage.setItem('user', JSON.stringify(user))
-        }
+        // AuthContext의 setAuthData 메서드를 사용하여 인증 정보 저장
+        setAuthData(accessToken, refreshToken, user)
 
         setMessage('로그인 성공! 리다이렉트 중...')
         setTimeout(() => navigate('/chatbot'), 1000)
@@ -61,7 +53,7 @@ function LoginPage() {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [navigate])
+  }, [navigate, setAuthData])
 
   const handleGoogleLogin = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID

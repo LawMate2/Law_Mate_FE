@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { authApi } from '@/services'
+import { authApi } from '../services/auth'
 import type { User, DevLoginRequest, DevSignupRequest, GoogleLoginRequest } from '@/types'
 
 interface AuthContextType {
@@ -9,6 +9,7 @@ interface AuthContextType {
   devLogin: (data: DevLoginRequest) => Promise<void>
   devSignup: (data: DevSignupRequest) => Promise<void>
   googleLogin: (data: GoogleLoginRequest) => Promise<void>
+  setAuthData: (accessToken: string, refreshToken: string, userData: User) => void
   logout: () => void
   refreshAccessToken: () => Promise<void>
 }
@@ -116,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         devLogin,
         devSignup,
         googleLogin,
+        setAuthData: saveAuthData,
         logout,
         refreshAccessToken,
       }}
