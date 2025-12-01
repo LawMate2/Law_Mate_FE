@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { api } from '../services'
 import { useAuth } from '../contexts/AuthContext'
+import googleLogo from '../images/google_logo.png'
 
 function LoginPage() {
   const [message, setMessage] = useState('')
@@ -98,24 +99,7 @@ function LoginPage() {
             onClick={handleGoogleLogin}
             disabled={isLoading}
           >
-            <svg viewBox="0 0 533.5 544.3" aria-hidden="true" focusable="false">
-              <path
-                fill="#4285f4"
-                d="M533.5 278.4c0-17.4-1.6-34-4.7-50.2H272v95.6h146.9c-6.4 34.5-25.7 63.7-54.8 83.2v68h88.4c51.8-47.7 80-118 80-196.6z"
-              />
-              <path
-                fill="#34a853"
-                d="M272 544.3c73.9 0 135.9-24.5 181.2-66.4l-88.4-68c-24.5 16.4-55.9 26-92.8 26-71.4 0-132-48.2-153.7-113.1H27.1v71.2c45 89.2 137.5 150.3 244.9 150.3z"
-              />
-              <path
-                fill="#fbbc04"
-                d="M118.3 322.8c-10.7-31.9-10.7-66.2 0-98.1v-71.2H27.1c-45.6 90.8-45.6 198.8 0 289.6z"
-              />
-              <path
-                fill="#ea4335"
-                d="M272 107.7c39.7-.6 78 14.3 106.7 41.7l79.5-79.5C407.8 24.5 345.8 0 272 0 164.6 0 72.1 61.1 27.1 150.3l91.2 71.2c21.7-64.9 82.3-113.8 153.7-113.8z"
-              />
-            </svg>
+            <img src={googleLogo} alt="Google logo" />
             Google 계정으로 로그인
           </button>
           <p className="muted fine-print">

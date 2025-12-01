@@ -32,7 +32,8 @@
   transition: box-shadow 150ms ease, transform 150ms ease;
 }
 
-.google-login-button svg {
+.google-login-button svg,
+.google-login-button img {
   width: 20px;
   height: 20px;
 }
