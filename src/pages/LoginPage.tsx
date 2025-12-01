@@ -4,6 +4,26 @@ import type { FormEvent } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
+const slideshow = [
+  {
+    title: "쉽고 빠르고 편리한 법률 상담 서비스",
+    desc: "단 몇 초면 빠른 AI 상담이 가능합니다.",
+    image: "https://img.kr.gcp-karroter.net/origin/article/202511/1763204099193bdaa8376b55df1a963a635ecc76984b3c95e47b86d11ad9aff28eb03c55ad5d30.webp?f=webp&q=95&s=1440x1440&t=inside"
+  },
+  {
+    title: "24시간 언제나 열려있는 상담소",
+    desc: "시간과 장소에 구애받지 않고 손 안에서 물어보세요.",
+    image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&q=80&w=1000"  //AI: Copilot - 이미지 출처 Unsplash
+  },
+  {
+    title: "복잡한 법률 용어도 알기 쉽게",
+    desc: "어려운 판례와 법령을 쉽게 이해하고 설명할 수 있어요.",
+    image: "https://i.ytimg.com/vi/_Lsku5VO8Rw/hqdefault.jpg"
+  }
+]
+
+const slideshow_time = 5000
+
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')

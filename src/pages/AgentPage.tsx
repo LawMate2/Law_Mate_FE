@@ -26,7 +26,7 @@ const label_map: Record<AgentAction, string> = {
 
 type AgentPageProps = {
   embedded?: boolean
-  onUploadSuccess?: (result: any, isImage?: boolean) => void
+  onUploadSuccess?: (result: any, isImage?: boolean, file?: File) => void
 }
 
 function AgentPage({ embedded, onUploadSuccess }: AgentPageProps) {

@@ -450,7 +450,7 @@ function ChatbotPage() {
           />
           <button type="submit" style={{ minWidth: '80px', height: '48px', alignSelf: 'center' }}>
             <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />  {/*AI: Sonnet 4.5 - svg 생성*/} {/*TODO: Ctrl+Enter 단축키 연결*/}
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />  {/*AI: Copilot - svg 생성*/} {/*TODO: Ctrl+Enter 단축키 연결*/}
             </svg>
           </button>
         </form>
