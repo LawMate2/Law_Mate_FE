@@ -1,6 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
-import { AgentPage, ChatbotPage, LoginPage } from './pages'
+import { AgentPage, ChatbotPage, LoginPage, GoogleCallbackPage } from './pages'
 
 function App() {
   return (
@@ -20,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
           <Route path="/chatbot" element={<ChatbotPage />} />
           <Route path="/agent" element={<AgentPage />} />
         </Routes>

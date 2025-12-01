@@ -1,42 +1,95 @@
 import './pages.css'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { authApi } from '../services/api'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
   const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    setMessage(`${email}로 로그인 시도`)
-  }
-
-  const handleGoogleLogin = async () => {
-    const access_token = "토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰토큰"
+    setIsLoading(true)
+    setMessage('로그인 처리 중...')
 
     try {
-      const response = await fetch("http://localhost:8000/auth/google", {
-        method: "POST",
-        headers: {
-          "accept": "application/json"
-          ,"Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          access_token: access_token
-        })
-      })
+      // 개발용 로그인 API 호출
+      const result = await authApi.devLogin(email, name || undefined)
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} 오류`)
-      }
+      // 토큰 저장
+      localStorage.setItem('access_token', result.access_token)
+      localStorage.setItem('refresh_token', result.refresh_token)
+      localStorage.setItem('user', JSON.stringify(result.user))
 
-      const result = await response.json()
-      setMessage(`${JSON.stringify(result)}: 로그인되었습니다.`)
+      setMessage('로그인 성공! 리다이렉트 중...')
+      setTimeout(() => navigate('/chatbot'), 1000)
     } catch (error) {
-      console.error(error)
-      setMessage(`${error}`)
+      console.error('개발용 로그인 실패:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      setMessage(`로그인 실패: ${errorMessage}`)
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  useEffect(() => {
+    // 팝업으로부터 메시지 수신
+    const handleMessage = async (event: MessageEvent) => {
+      // 보안: origin 확인
+      if (event.origin !== window.location.origin) return
+
+      if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+        const { accessToken, refreshToken, user } = event.data
+
+        // 토큰 및 사용자 정보 저장
+        localStorage.setItem('access_token', accessToken)
+        localStorage.setItem('refresh_token', refreshToken)
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user))
+        }
+
+        setMessage('로그인 성공! 리다이렉트 중...')
+        setTimeout(() => navigate('/chatbot'), 1000)
+      } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+        setMessage(`로그인 실패: ${event.data.error}`)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [navigate])
+
+  const handleGoogleLogin = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI
+    const scope = 'openid email profile'
+
+    // Google OAuth URL 생성
+    const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+    googleAuthUrl.searchParams.append('client_id', clientId)
+    googleAuthUrl.searchParams.append('redirect_uri', redirectUri)
+    googleAuthUrl.searchParams.append('response_type', 'code')
+    googleAuthUrl.searchParams.append('scope', scope)
+    googleAuthUrl.searchParams.append('access_type', 'offline')
+    googleAuthUrl.searchParams.append('prompt', 'consent')
+
+    // 팝업으로 Google 로그인 열기
+    const width = 500
+    const height = 600
+    const left = window.screenX + (window.outerWidth - width) / 2
+    const top = window.screenY + (window.outerHeight - height) / 2
+
+    window.open(
+      googleAuthUrl.toString(),
+      'Google 로그인',
+      `width=${width},height=${height},left=${left},top=${top}`
+    )
+
+    setMessage('Google 로그인 팝업이 열렸습니다...')
   }
 
   return (
@@ -53,19 +106,22 @@ function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
+              disabled={isLoading}
             />
           </label>
           <label>
-            비밀번호
+            이름 (선택사항)
             <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
+              type="text"
+              placeholder="홍길동"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              disabled={isLoading}
             />
           </label>
-          <button type="submit">로그인</button>
+          <button type="submit" disabled={isLoading}>
+            {isLoading ? '로그인 중...' : '개발용 로그인'}
+          </button>
           <button
             type="button"
             onClick={handleGoogleLogin}
