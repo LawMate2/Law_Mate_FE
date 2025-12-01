@@ -186,6 +186,18 @@
 
 .message {
   margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.message.user {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.message.assistant {
+  align-items: flex-start;
+  text-align: left;
 }
 
 .message strong {
