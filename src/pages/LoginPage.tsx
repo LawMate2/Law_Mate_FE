@@ -70,8 +70,8 @@ function LoginPage() {
     googleAuthUrl.searchParams.append('prompt', 'consent')
 
     // 팝업으로 Google 로그인 열기
-    const width = 500
-    const height = 600
+    const width = 700
+    const height = 900
     const left = window.screenX + (window.outerWidth - width) / 2
     const top = window.screenY + (window.outerHeight - height) / 2
 
@@ -111,8 +111,15 @@ function LoginPage() {
               disabled={isLoading}
             />
           </label>
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? '로그인 중...' : '개발용 로그인'}
+          <button
+            type="submit"
+            disabled={isLoading}
+            style={{
+              width: "100%"
+              ,alignSelf: "center"
+            }}
+          >
+            {isLoading ? '로그인 중...' : '로그인'}
           </button>
           <button
             type="button"
@@ -122,19 +129,20 @@ function LoginPage() {
               ,background: "#ffffff"
               ,color: "#444"
               ,border: "1px solid #ccc"
-              ,width: "auto"
+              ,width: "100%"
               ,alignSelf: "center"
               ,display: "flex"
               ,alignItems: "center"
+              ,justifyContent: "center"
               ,gap: "0.5rem"
-              ,padding: "0.5rem 1rem"
+              ,padding: "0.9rem 1.5rem"
             }}
           >
-            <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Google_Favicon_2025.svg" 
-              alt="Google 로그인" 
-              width="24" 
-              height="24" 
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Google_Favicon_2025.svg"
+              alt="Google 로그인"
+              width="24"
+              height="24"
             />
             <span>Google 로그인</span>
           </button>

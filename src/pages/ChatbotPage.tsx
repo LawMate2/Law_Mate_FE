@@ -47,6 +47,7 @@ function ChatbotPage() {
   const [chatID, setChatID] = useState(chats[0]?.id ?? '')
   const [input, setInput] = useState('')
   const [showAgentPopup, setShowAgentPopup] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const active_chat = useMemo(
     () => chats.find((chat) => chat.id === chatID) ?? chats[0],
@@ -55,7 +56,7 @@ function ChatbotPage() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!input.trim() || !active_chat) return
+    if (!input.trim() || !active_chat || isLoading) return
     const new_message: Message = {
       id: crypto.randomUUID()
       ,role: "user"
@@ -76,6 +77,7 @@ function ChatbotPage() {
       ,
     )
     setInput('')
+    setIsLoading(true)
     try {
       const response = await fetch("http://localhost:8000/chat/"
         , {
@@ -136,6 +138,8 @@ function ChatbotPage() {
             ,
         ),
       )
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -177,12 +181,27 @@ function ChatbotPage() {
         </header> */}
         <div className="messages">
           {active_chat?.messages.length ? (
-            active_chat.messages.map((message) => (
-              <article key={message.id} className={`message ${message.role}`}>
-                <strong>{message.role === 'user' ? '사용자' : 'LawMate'}</strong>
-                <span>{message.content}</span>
-              </article>
-            ))
+            <>
+              {active_chat.messages.map((message) => (
+                <article key={message.id} className={`message ${message.role}`}>
+                  <strong>{message.role === 'user' ? '사용자' : 'LawMate'}</strong>
+                  <span>{message.content}</span>
+                </article>
+              ))}
+              {isLoading && (
+                <article className="message assistant">
+                  <strong>LawMate</strong>
+                  <div className="loading-dots">
+                    <span>답변을 생성하고 있습니다</span>
+                    <div className="dots">
+                      <span>.</span>
+                      <span>.</span>
+                      <span>.</span>
+                    </div>
+                  </div>
+                </article>
+              )}
+            </>
           ) : (
             <p className="muted">메시지를 입력하면 이 영역에 대화가 표시됩니다.</p>
           )}
@@ -204,7 +223,6 @@ function ChatbotPage() {
               ,justifyContent: "center"
               ,alignSelf: "center"
               ,marginRight: "0.5rem"
-              ,marginBottom: "4px"
               ,
             }
           }>
@@ -218,7 +236,7 @@ function ChatbotPage() {
             value={input}
             onChange={(event) => setInput(event.target.value)}
           />
-          <button type="submit" style={{ minWidth: '80px' }}>
+          <button type="submit" style={{ minWidth: '80px', height: '48px', alignSelf: 'center' }}>
             <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />  {/*AI: Sonnet 4.5 - svg 생성*/} {/*TODO: Ctrl+Enter 단축키 연결*/}
             </svg>

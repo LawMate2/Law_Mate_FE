@@ -17,19 +17,38 @@ function App() {
         <nav>
           {isAuthenticated && user ? (
             <>
-              <span style={{ marginRight: '1rem', color: '#666' }}>
+              <span style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: '#475569',
+                fontWeight: '600'
+              }}>
                 {user.name}님 환영합니다!
               </span>
               <NavLink to="/chatbot">AI 상담</NavLink>
               <button
                 onClick={logout}
                 style={{
-                  marginLeft: '0.5rem',
                   padding: '0.5rem 1rem',
+                  borderRadius: '1000px',
+                  color: '#475569',
+                  fontWeight: '600',
+                  border: '1px solid transparent',
                   background: 'transparent',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#eff6ff'
+                  e.currentTarget.style.borderColor = '#1d4ed8'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(29, 78, 216, 0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.borderColor = 'transparent'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
                 }}
               >
                 로그아웃
