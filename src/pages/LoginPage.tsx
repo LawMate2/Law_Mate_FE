@@ -1,7 +1,7 @@
 import './pages.css'
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 function LoginPage() {
@@ -10,28 +10,9 @@ function LoginPage() {
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
-  const { devLogin, setAuthData } = useAuth()
+  const { devLogin, setAuthData, isAuthenticated, loading } = useAuth()
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault()
-    setIsLoading(true)
-    setMessage('로그인 처리 중...')
-
-    try {
-      // AuthContext의 devLogin 메서드 사용
-      await devLogin({ email, name: name || undefined })
-
-      setMessage('로그인 성공! 리다이렉트 중...')
-      setTimeout(() => navigate('/chatbot'), 1000)
-    } catch (error) {
-      console.error('개발용 로그인 실패:', error)
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      setMessage(`로그인 실패: ${errorMessage}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
+  // 모든 hooks를 조건문 이전에 호출
   useEffect(() => {
     // 팝업으로부터 메시지 수신
     const handleMessage = async (event: MessageEvent) => {
@@ -45,7 +26,7 @@ function LoginPage() {
         setAuthData(accessToken, refreshToken, user)
 
         setMessage('로그인 성공! 리다이렉트 중...')
-        setTimeout(() => navigate('/chatbot'), 1000)
+        // isAuthenticated가 true로 변경되면 자동으로 리다이렉트됨
       } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
         setMessage(`로그인 실패: ${event.data.error}`)
       }
@@ -54,6 +35,27 @@ function LoginPage() {
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
   }, [navigate, setAuthData])
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+    setIsLoading(true)
+    setMessage('로그인 처리 중...')
+
+    try {
+      // AuthContext의 devLogin 메서드 사용
+      console.log('[LoginPage] devLogin 호출 전')
+      await devLogin({ email, name: name || undefined })
+      console.log('[LoginPage] devLogin 완료')
+      setMessage('로그인 성공!')
+      // isAuthenticated가 true로 변경되면 자동으로 리다이렉트됨
+    } catch (error) {
+      console.error('개발용 로그인 실패:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      setMessage(`로그인 실패: ${errorMessage}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleGoogleLogin = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -82,6 +84,29 @@ function LoginPage() {
     )
 
     setMessage('Google 로그인 팝업이 열렸습니다...')
+  }
+
+  console.log('[LoginPage] isAuthenticated:', isAuthenticated, 'loading:', loading)
+
+  // AuthContext 로딩 중일 때 로딩 표시
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        fontSize: '1.2rem',
+        color: '#475569'
+      }}>
+        <div>로딩 중...</div>
+      </div>
+    )
+  }
+
+  // 이미 로그인된 경우 chatbot 페이지로 리다이렉트
+  if (isAuthenticated) {
+    return <Navigate to="/chatbot" replace />
   }
 
   return (
