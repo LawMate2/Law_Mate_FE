@@ -31,8 +31,8 @@ a {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.50);
+  backdrop-filter: blur(8px);
   border-bottom: 1px solid #e2e8f0;
   z-index: 2;
 }
@@ -59,31 +59,36 @@ nav {
 
 nav a {
   padding: 0.5rem 1rem;
-  border-radius: 999px;
+  border-radius: 1000px;
   color: #475569;
   font-weight: 600;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
 }
 
-nav a.active {
+nav a:hover {
+  background: #eff6ff;
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.1);
+}
+
+nav a:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.1);
+  border-color: #000000;
+}
+
+/* 점하고 콜론 주의! */
+nav a.active {  
   background: #1d4ed8;
   color: #fff;
+  border-color: #1d4ed8;
 }
 
-nav .logout-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  color: #475569;
-  font-weight: 600;
-  background: transparent;
-  border: 1px solid #e2e8f0;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-nav .logout-btn:hover {
-  background: #fee;
-  color: #dc2626;
-  border-color: #fca5a5;
+nav a.active:hover {
+  background: #1d4ed8;
+  color: #fff;
 }
 
 .app-main {

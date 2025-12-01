@@ -1,12 +1,8 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import { AgentPage, ChatbotPage, LoginPage } from './pages'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { ProtectedRoute } from './components/ProtectedRoute'
 
-function AppContent() {
-  const { isAuthenticated, logout } = useAuth()
-
+function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
@@ -15,15 +11,8 @@ function AppContent() {
           <strong>LawMate</strong>
         </div>
         <nav>
-          {!isAuthenticated ? (
-            <NavLink to="/login">로그인</NavLink>
-          ) : (
-            <>
-              <NavLink to="/chatbot">챗봇</NavLink>
-              <NavLink to="/agent">에이전트</NavLink>
-              <button onClick={logout} className="logout-btn">로그아웃</button>
-            </>
-          )}
+          <NavLink to="/login">로그인</NavLink>
+          <NavLink to="/chatbot">AI 상담</NavLink>
         </nav>
       </header>
 
@@ -31,33 +20,11 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/chatbot"
-            element={
-              <ProtectedRoute>
-                <ChatbotPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/agent"
-            element={
-              <ProtectedRoute>
-                <AgentPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/chatbot" element={<ChatbotPage />} />
+          <Route path="/agent" element={<AgentPage />} />
         </Routes>
       </main>
     </div>
-  )
-}
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   )
 }
 

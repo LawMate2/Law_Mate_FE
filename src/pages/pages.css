@@ -1,0 +1,340 @@
+.page {
+  display: flex;
+  gap: 1.5rem;
+  padding: 2rem;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.panel {
+  flex: 1;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+}
+
+.login-page {
+  min-height: calc(100vh - 4rem);
+  align-items: stretch;
+}
+
+.login-info {
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.85), rgba(59, 130, 246, 0.85)), url("https://img.kr.gcp-karroter.net/origin/article/202511/1763204099193bdaa8376b55df1a963a635ecc76984b3c95e47b86d11ad9aff28eb03c55ad5d30.webp?f=webp&q=95&s=1440x1440&t=inside");
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-weight: 600;
+}
+
+.form input,
+.form textarea {
+  border: 1px solid #d4d7dd;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: border 150ms ease;
+}
+
+.form input:focus,
+.form textarea:focus {
+  border-color: #1d4ed8;
+  outline: none;
+}
+
+.form button {
+  margin-top: 0.5rem;
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.form button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+}
+
+.muted {
+  color: #64748b;
+}
+
+.feedback {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.chat-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  height: calc(100vh - 4rem);
+}
+
+.chat-log {
+  border-right: 1px solid #e2e8f0;
+  padding-right: 1rem;
+}
+
+.chat-log ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-log li {
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: #f1f5f9;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.chat-log li.active,
+.chat-log li:hover {
+  background: #dbeafe;
+}
+
+.chat-window {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1rem;
+  background: #f8fafc;
+}
+
+.message {
+  margin-bottom: 1rem;
+}
+
+.message strong {
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.message.user strong {
+  color: #1d4ed8;
+}
+
+.message.assistant strong {
+  color: #16a34a;
+}
+
+.chat-input {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.chat-input textarea {
+  flex: 1;
+  min-height: 72px;
+}
+
+.chat-input button {
+  min-width: 120px;
+  align-self: flex-end;
+}
+
+.agent-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.agent-main-upload {
+  flex: 1;
+  display: flex;
+}
+
+.agent-main-upload .agent-button {
+  width: 100%;
+  min-height: 240px;
+  font-size: 1.25rem;
+}
+
+.agent-integrations {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.agent-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.agent-button.small-button {
+  padding: 0.75rem;
+  gap: 0.5rem;
+  min-height: auto;
+}
+
+.agent-button.small-button .icon-placeholder {
+  width: 40px;
+  height: 40px;
+}
+
+.agent-button.small-button span {
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.agent-button:hover {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.1);
+}
+
+.agent-button.dragging {
+  border-color: #1d4ed8;
+  background: #dbeafe;
+  border-style: dashed;
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.15);
+}
+
+.agent-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.1);
+  border-color: #000000;
+}
+
+.agent-button .icon-placeholder {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.agent-button span {
+  font-weight: 600;
+  color: #334155;
+  font-size: 1.1rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 0.5rem;
+  margin: -0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.close-button:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+pre {
+  background: #0f172a;
+  color: #f1f5f9;
+  border-radius: 16px;
+  padding: 1.5rem;
+  overflow-x: auto;
+}
